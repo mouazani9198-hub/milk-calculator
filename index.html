@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>حاسبة تحويل الحليب</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f2942">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="حاسبة الحليب">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --navy:#0f2942;
+    --navy-deep:#0a1d30;
+    --steel:#2c4a63;
+    --milk:#f4f6f0;
+    --accent:#2f7dbf;
+    --accent-dim:#1e5a8f;
+    --led-bg:#0d1f14;
+    --led-fg:#7fe8a0;
+    --amber:#e0a938;
+    --danger:#c0553f;
+    --text-soft:#c7d2dc;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0;
+    min-height:100%;
+    background:var(--navy-deep);
+    background-image:radial-gradient(circle at 50% -10%, var(--steel) 0%, var(--navy-deep) 65%);
+    font-family:'Segoe UI', Tahoma, Arial, sans-serif;
+    color:var(--milk);
+    padding:14px;
+  }
+  .wrap{max-width:460px;margin:0 auto;}
+  header{text-align:center;padding:6px 0 18px;}
+  header .badge{
+    display:inline-block;background:var(--accent-dim);color:var(--milk);
+    font-size:11px;letter-spacing:2px;padding:4px 12px;border-radius:20px;margin-bottom:8px;
+  }
+  header h1{font-size:19px;margin:0;font-weight:600;color:var(--milk);}
+  header p{margin:4px 0 0;font-size:12px;color:var(--text-soft);}
+
+  .card{
+    background:var(--navy);border-radius:16px;padding:16px;margin-bottom:14px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.05);
+  }
+  .card h2{
+    font-size:12px;letter-spacing:1px;color:var(--text-soft);margin:0 0 10px;
+    text-transform:uppercase;display:flex;align-items:center;gap:6px;
+  }
+  .card h2::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;}
+
+  .settings-row{display:flex;gap:10px;}
+  .field{flex:1;}
+  .field label{display:block;font-size:11px;color:var(--text-soft);margin-bottom:5px;}
+  .field input{
+    width:100%;background:var(--navy-deep);border:1px solid rgba(255,255,255,0.1);
+    border-radius:8px;color:var(--milk);font-size:16px;padding:9px 10px;
+    text-align:center;font-family:'Consolas','Courier New',monospace;
+  }
+  .field input:focus{outline:none;border-color:var(--accent);}
+  .field select{
+    width:100%;background:var(--navy-deep);border:1px solid rgba(255,255,255,0.1);
+    border-radius:8px;color:var(--milk);font-size:15px;padding:9px 10px;
+    text-align:center;font-family:inherit;
+  }
+  .field select:focus{outline:none;border-color:var(--accent);}
+
+  .direction-toggle{display:flex;background:var(--navy-deep);border-radius:10px;padding:4px;margin-bottom:14px;gap:4px;}
+  .direction-toggle button{
+    flex:1;background:transparent;border:none;color:var(--text-soft);font-size:12px;
+    padding:9px 6px;border-radius:7px;cursor:pointer;font-family:inherit;font-weight:600;
+  }
+  .direction-toggle button.active{background:var(--accent);color:#fff;}
+
+  .screen{background:var(--led-bg);border-radius:10px;padding:14px 16px;box-shadow:inset 0 3px 10px rgba(0,0,0,0.5);}
+  .screen-label{font-size:11px;color:#4a8a5f;letter-spacing:1px;margin-bottom:2px;}
+  .screen-value{
+    font-family:'Consolas','Courier New',monospace;font-size:34px;color:var(--led-fg);
+    text-shadow:0 0 10px rgba(127,232,160,0.4);direction:ltr;text-align:left;letter-spacing:1px;
+  }
+  .screen-value input{
+    background:transparent;border:none;color:var(--led-fg);font-family:inherit;
+    font-size:inherit;text-shadow:inherit;width:100%;direction:ltr;text-align:left;outline:none;
+  }
+  .screen.readonly .screen-value{color:var(--amber);text-shadow:0 0 10px rgba(224,169,56,0.4);}
+  .screen.readonly .screen-label{color:#a17c2a;}
+
+  .result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+
+  .actions{display:flex;gap:10px;margin-top:14px;}
+  .actions button{
+    flex:1;border:none;border-radius:10px;padding:11px;font-size:13px;
+    font-weight:600;cursor:pointer;font-family:inherit;
+  }
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-secondary{background:var(--steel);color:var(--milk);}
+  .btn-danger{background:var(--danger);color:#fff;}
+
+  .history-item{
+    display:flex;justify-content:space-between;align-items:center;padding:10px 4px;
+    border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;
+  }
+  .history-item:last-child{border-bottom:none;}
+  .history-item .h-main{color:var(--milk);}
+  .history-item .h-sub{color:var(--text-soft);font-size:11px;margin-top:2px;}
+  .history-item .h-time{color:var(--text-soft);font-size:11px;white-space:nowrap;}
+  .empty-history{text-align:center;color:var(--text-soft);font-size:12px;padding:14px 0;}
+
+  .pin-dot{
+    width:16px;height:16px;border-radius:50%;
+    border:1.5px solid var(--text-soft);
+    background:transparent;
+    transition:background 0.15s ease;
+  }
+  .pin-dot.filled{background:var(--accent);border-color:var(--accent);}
+  .keypad-btn{
+    background:var(--navy);border:1px solid rgba(255,255,255,0.08);
+    color:var(--milk);font-size:20px;font-weight:600;
+    padding:16px 0;border-radius:12px;cursor:pointer;font-family:inherit;
+  }
+  .keypad-btn:active{background:var(--steel);}
+
+  .order-line{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--navy-deep);border-radius:8px;padding:9px 12px;margin-bottom:8px;
+    font-size:13px;
+  }
+  .order-line .type-badge{
+    background:var(--accent-dim);color:var(--milk);font-size:11px;
+    padding:2px 8px;border-radius:10px;margin-left:8px;
+  }
+  .order-line .balance{color:var(--amber);font-weight:600;direction:ltr;}
+  .order-line .delivered{color:var(--text-soft);font-size:11px;}
+</style>
+</head>
+<body>
+
+<div id="lockOverlay" style="position:fixed;inset:0;background:var(--navy-deep);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div style="max-width:340px;width:100%;text-align:center;">
+    <div style="font-size:15px;color:var(--text-soft);margin-bottom:6px;letter-spacing:1px;" id="lockTitle">أدخل الرمز السري</div>
+    <div style="font-size:11px;color:var(--text-soft);margin-bottom:20px;" id="lockSubtitle"></div>
+    <div id="pinDots" style="display:flex;justify-content:center;gap:14px;margin-bottom:24px;">
+      <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+    </div>
+    <div id="lockError" style="color:var(--danger);font-size:12px;min-height:18px;margin-bottom:10px;"></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+      <button class="keypad-btn" onclick="pinPress('1')">1</button>
+      <button class="keypad-btn" onclick="pinPress('2')">2</button>
+      <button class="keypad-btn" onclick="pinPress('3')">3</button>
+      <button class="keypad-btn" onclick="pinPress('4')">4</button>
+      <button class="keypad-btn" onclick="pinPress('5')">5</button>
+      <button class="keypad-btn" onclick="pinPress('6')">6</button>
+      <button class="keypad-btn" onclick="pinPress('7')">7</button>
+      <button class="keypad-btn" onclick="pinPress('8')">8</button>
+      <button class="keypad-btn" onclick="pinPress('9')">9</button>
+      <button class="keypad-btn" style="visibility:hidden"></button>
+      <button class="keypad-btn" onclick="pinPress('0')">0</button>
+      <button class="keypad-btn" onclick="pinBackspace()">⌫</button>
+    </div>
+    <div id="forgotPinRow" style="margin-top:18px;font-size:11px;color:var(--text-soft);display:none;">
+      نسيت الرمز؟ <a href="#" onclick="resetPin();return false;" style="color:var(--accent);">إعادة ضبط الرمز (سيحذف كل البيانات المحفوظة)</a>
+    </div>
+  </div>
+</div>
+
+<div id="appContent" style="display:none;">
+<div class="wrap">
+  <header>
+    <div class="badge">أداة تحويل الوزن</div>
+    <h1>حاسبة المنصات والطن</h1>
+    <p>تحويل بين عدد المنصات والوزن بالطن حسب تركيبة كل شحنة</p>
+    <div style="margin-top:8px;">
+      <button onclick="openChangePin()" style="background:none;border:1px solid rgba(255,255,255,0.15);color:var(--text-soft);font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;">🔒 تغيير الرمز السري</button>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2>إعدادات المنصة</h2>
+    <div class="settings-row">
+      <div class="field">
+        <label>عدد الأكياس في المنصة</label>
+        <input type="number" id="bagsPerPallet" value="50" min="1" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>وزن الكيس (كغ)</label>
+        <input type="number" id="bagWeight" value="25" min="0.1" step="0.5" inputmode="decimal">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>العميل ورصيده (Solde)</h2>
+    <div class="settings-row">
+      <div class="field" style="flex:2">
+        <label>اختر عميل</label>
+        <select id="customerSelect" onchange="onCustomerChange()">
+          <option value="">— بدون عميل —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-row" style="margin-top:10px">
+      <div class="field">
+        <label>اسم العميل</label>
+        <input type="text" id="newCustomerName" placeholder="مثال: مخبزة النور">
+      </div>
+      <div class="field">
+        <label>نوع البودرة لهذه الطلبية</label>
+        <select id="newCustomerType">
+          <option value="0%">0% دسم</option>
+          <option value="26%">26% دسم</option>
+        </select>
+      </div>
+    </div>
+    <div class="settings-row" style="margin-top:10px">
+      <div class="field">
+        <label>الكمية المطلوبة لهذا النوع (طن)</label>
+        <input type="number" id="newCustomerTotal" step="0.001" inputmode="decimal" placeholder="0">
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" onclick="addCustomer()">إضافة / تحديث طلبية العميل</button>
+      <button class="btn-danger" onclick="deleteSelectedCustomer()">حذف العميل بالكامل</button>
+    </div>
+
+    <div id="customerOrdersList" style="margin-top:12px"></div>
+    <div id="customerWarning" style="display:none;margin-top:10px;background:var(--danger);color:#fff;padding:10px;border-radius:8px;font-size:13px;text-align:center;font-weight:600;"></div>
+  </div>
+
+  <div class="card">
+    <h2>الحساب (اكتب في أي خانة)</h2>
+
+    <div class="settings-row" style="margin-bottom:12px">
+      <div class="field">
+        <label>نوع البودرة المسلّمة</label>
+        <select id="powderType">
+          <option value="0%">0% دسم</option>
+          <option value="26%">26% دسم</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="screenPallets" class="screen">
+      <div class="screen-label">عدد المنصات</div>
+      <div class="screen-value">
+        <input type="number" id="palletsInput" inputmode="numeric" placeholder="0">
+      </div>
+    </div>
+
+    <div style="height:10px"></div>
+
+    <div id="screenTons" class="screen">
+      <div class="screen-label">الوزن بالطن (يُكتب في ورقة الخروج)</div>
+      <div class="screen-value">
+        <input type="number" id="tonsInput" inputmode="decimal" step="0.001" placeholder="0">
+      </div>
+    </div>
+
+    <div id="remainderBox" class="result-grid">
+      <div class="screen readonly">
+        <div class="screen-label">منصات كاملة (ناتج)</div>
+        <div class="screen-value" id="palletsOutput">0</div>
+      </div>
+      <div class="screen readonly">
+        <div class="screen-label">الأكياس المتبقية</div>
+        <div class="screen-value" id="bagsRemainderOutput">0</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" onclick="saveToHistory()">حفظ في السجل</button>
+      <button class="btn-secondary" onclick="resetFields()">تصفير</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>السجل (Historique)</h2>
+    <div id="historyList"></div>
+    <div class="actions">
+      <button class="btn-danger" onclick="clearHistory()">مسح السجل بالكامل</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const PIN_KEY = 'milk_calc_pin_v1';
+let pinBuffer = '';
+let pinStage = 'checking'; // 'setup1' | 'setup2' | 'unlock' | 'change_old' | 'change_new1' | 'change_new2'
+let tempFirstPin = '';
+
+const lockOverlayEl = document.getElementById('lockOverlay');
+const appContentEl = document.getElementById('appContent');
+const lockTitleEl = document.getElementById('lockTitle');
+const lockSubtitleEl = document.getElementById('lockSubtitle');
+const lockErrorEl = document.getElementById('lockError');
+const pinDotsEl = document.getElementById('pinDots');
+const forgotPinRowEl = document.getElementById('forgotPinRow');
+
+function renderPinDots(){
+  const dots = pinDotsEl.querySelectorAll('.pin-dot');
+  dots.forEach((d,i) => d.classList.toggle('filled', i < pinBuffer.length));
+}
+
+function pinPress(digit){
+  if(pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  renderPinDots();
+  lockErrorEl.textContent = '';
+  if(pinBuffer.length === 4){
+    setTimeout(handlePinComplete, 150);
+  }
+}
+function pinBackspace(){
+  pinBuffer = pinBuffer.slice(0, -1);
+  renderPinDots();
+}
+
+function handlePinComplete(){
+  const savedPin = localStorage.getItem(PIN_KEY);
+  if(pinStage === 'setup1'){
+    tempFirstPin = pinBuffer;
+    pinBuffer = '';
+    renderPinDots();
+    pinStage = 'setup2';
+    lockTitleEl.textContent = 'أعد إدخال الرمز للتأكيد';
+    return;
+  }
+  if(pinStage === 'setup2'){
+    if(pinBuffer === tempFirstPin){
+      localStorage.setItem(PIN_KEY, pinBuffer);
+      unlockApp();
+    } else {
+      lockErrorEl.textContent = 'الرمزان غير متطابقين، حاول من جديد';
+      pinBuffer = '';
+      tempFirstPin = '';
+      renderPinDots();
+      pinStage = 'setup1';
+      lockTitleEl.textContent = 'اختر رمزاً سرياً من 4 أرقام';
+    }
+    return;
+  }
+  if(pinStage === 'unlock'){
+    if(pinBuffer === savedPin){
+      unlockApp();
+    } else {
+      lockErrorEl.textContent = 'رمز غير صحيح';
+      pinBuffer = '';
+      renderPinDots();
+    }
+    return;
+  }
+  if(pinStage === 'change_old'){
+    if(pinBuffer === savedPin){
+      pinBuffer = '';
+      renderPinDots();
+      pinStage = 'change_new1';
+      lockTitleEl.textContent = 'اختر رمزاً سرياً جديداً';
+      lockSubtitleEl.textContent = '';
+    } else {
+      lockErrorEl.textContent = 'الرمز الحالي غير صحيح';
+      pinBuffer = '';
+      renderPinDots();
+    }
+    return;
+  }
+  if(pinStage === 'change_new1'){
+    tempFirstPin = pinBuffer;
+    pinBuffer = '';
+    renderPinDots();
+    pinStage = 'change_new2';
+    lockTitleEl.textContent = 'أعد إدخال الرمز الجديد للتأكيد';
+    return;
+  }
+  if(pinStage === 'change_new2'){
+    if(pinBuffer === tempFirstPin){
+      localStorage.setItem(PIN_KEY, pinBuffer);
+      unlockApp();
+    } else {
+      lockErrorEl.textContent = 'الرمزان غير متطابقين، حاول من جديد';
+      pinBuffer = '';
+      renderPinDots();
+      pinStage = 'change_new1';
+      lockTitleEl.textContent = 'اختر رمزاً سرياً جديداً';
+    }
+    return;
+  }
+}
+
+function unlockApp(){
+  lockOverlayEl.style.display = 'none';
+  appContentEl.style.display = 'block';
+  pinBuffer = '';
+}
+
+function openChangePin(){
+  lockOverlayEl.style.display = 'flex';
+  appContentEl.style.display = 'none';
+  pinBuffer = '';
+  pinStage = 'change_old';
+  lockTitleEl.textContent = 'أدخل الرمز الحالي';
+  lockSubtitleEl.textContent = '';
+  lockErrorEl.textContent = '';
+  forgotPinRowEl.style.display = 'none';
+  renderPinDots();
+}
+
+function resetPin(){
+  if(!confirm('سيتم حذف الرمز السري وكل بيانات العملاء والسجل المحفوظة. متابعة؟')) return;
+  localStorage.removeItem(PIN_KEY);
+  localStorage.removeItem('milk_calc_history_v1');
+  localStorage.removeItem('milk_calc_customers_v1');
+  location.reload();
+}
+
+function initLock(){
+  const savedPin = localStorage.getItem(PIN_KEY);
+  if(!savedPin){
+    pinStage = 'setup1';
+    lockTitleEl.textContent = 'اختر رمزاً سرياً من 4 أرقام';
+    lockSubtitleEl.textContent = 'سيُطلب منك هذا الرمز في كل مرة تفتح فيها التطبيق';
+    forgotPinRowEl.style.display = 'none';
+  } else {
+    pinStage = 'unlock';
+    lockTitleEl.textContent = 'أدخل الرمز السري';
+    lockSubtitleEl.textContent = '';
+    forgotPinRowEl.style.display = 'block';
+  }
+  renderPinDots();
+}
+initLock();
+
+const STORAGE_KEY = 'milk_calc_history_v1';
+
+const CUSTOMERS_KEY = 'milk_calc_customers_v1';
+let lastEdited = 'pallets';
+
+const bagsPerPalletEl = document.getElementById('bagsPerPallet');
+const bagWeightEl = document.getElementById('bagWeight');
+const palletsInputEl = document.getElementById('palletsInput');
+const tonsInputEl = document.getElementById('tonsInput');
+const palletsOutputEl = document.getElementById('palletsOutput');
+const bagsRemainderOutputEl = document.getElementById('bagsRemainderOutput');
+const customerSelectEl = document.getElementById('customerSelect');
+const customerWarningEl = document.getElementById('customerWarning');
+const powderTypeEl = document.getElementById('powderType');
+const customerOrdersListEl = document.getElementById('customerOrdersList');
+const POWDER_TYPES = ['0%', '26%'];
+
+function loadCustomers(){
+  try{
+    const raw = localStorage.getItem(CUSTOMERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function persistCustomers(list){
+  try{ localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(list)); }catch(e){}
+}
+function renderCustomerSelect(keepSelectedId){
+  const list = loadCustomers();
+  const current = keepSelectedId !== undefined ? keepSelectedId : customerSelectEl.value;
+  customerSelectEl.innerHTML = '<option value="">— بدون عميل —</option>' +
+    list.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  customerSelectEl.value = current || '';
+  renderCustomerOrders();
+}
+function getSelectedCustomer(){
+  const list = loadCustomers();
+  return list.find(c => c.id === customerSelectEl.value) || null;
+}
+function renderCustomerOrders(){
+  const c = getSelectedCustomer();
+  if(!c){
+    customerOrdersListEl.innerHTML = '';
+    customerWarningEl.style.display = 'none';
+    return;
+  }
+  const types = Object.keys(c.orders || {}).filter(t => c.orders[t].total > 0);
+  if(types.length === 0){
+    customerOrdersListEl.innerHTML = '<div class="empty-history">لا توجد طلبيات نشطة لهذا العميل</div>';
+    return;
+  }
+  customerOrdersListEl.innerHTML = types.map(t => {
+    const o = c.orders[t];
+    const remaining = o.total - o.delivered;
+    return `<div class="order-line">
+      <div><span class="type-badge">${t}</span><span class="delivered">مُسلّم: ${formatTons(o.delivered)} طن</span></div>
+      <div class="balance">متبقي: ${formatTons(remaining)} طن</div>
+    </div>`;
+  }).join('');
+}
+function onCustomerChange(){
+  renderCustomerOrders();
+  checkCustomerWarning();
+}
+function addCustomer(){
+  const nameEl = document.getElementById('newCustomerName');
+  const totalEl = document.getElementById('newCustomerTotal');
+  const typeEl = document.getElementById('newCustomerType');
+  const name = nameEl.value.trim();
+  const total = parseLocaleNumber(totalEl.value);
+  const type = typeEl.value;
+  if(!name || total <= 0){ return; }
+
+  let list = loadCustomers();
+  let customer = list.find(c => c.name.trim().toLowerCase() === name.toLowerCase());
+  if(!customer){
+    customer = {id: 'c_' + Date.now(), name, orders:{}};
+    list.push(customer);
+  }
+  if(!customer.orders[type]){
+    customer.orders[type] = {total: 0, delivered: 0};
+  }
+  customer.orders[type].total = Math.round((customer.orders[type].total + total) * 1000) / 1000;
+
+  persistCustomers(list);
+  nameEl.value = '';
+  totalEl.value = '';
+  renderCustomerSelect(customer.id);
+}
+function deleteSelectedCustomer(){
+  const id = customerSelectEl.value;
+  if(!id) return;
+  let list = loadCustomers();
+  list = list.filter(c => c.id !== id);
+  persistCustomers(list);
+  renderCustomerSelect('');
+}
+function checkCustomerWarning(){
+  const c = getSelectedCustomer();
+  const tons = parseLocaleNumber(tonsInputEl.value);
+  const type = powderTypeEl.value;
+  if(!c || tons <= 0){
+    customerWarningEl.style.display = 'none';
+    return false;
+  }
+  const order = c.orders ? c.orders[type] : null;
+  if(!order || order.total <= 0){
+    customerWarningEl.style.background = 'var(--danger)';
+    customerWarningEl.textContent = `تنبيه: ${c.name} ما عنده طلبية مسجلة لنوع ${type}`;
+    customerWarningEl.style.display = 'block';
+    return true;
+  }
+  const remaining = order.total - order.delivered;
+  if(tons > remaining + 0.0001){
+    customerWarningEl.style.background = 'var(--danger)';
+    customerWarningEl.textContent = `تنبيه: الكمية المدخلة (${formatTons(tons)} طن) تتجاوز رصيد ${c.name} المتبقي من نوع ${type} (${formatTons(remaining)} طن)`;
+    customerWarningEl.style.display = 'block';
+    return true;
+  }
+  customerWarningEl.style.display = 'none';
+  return false;
+}
+
+function formatTons(v){
+  return v.toFixed(3).replace('.', ',');
+}
+function parseLocaleNumber(str){
+  if(!str) return 0;
+  return parseFloat(String(str).replace(',', '.')) || 0;
+}
+
+function computeFromPallets(){
+  lastEdited = 'pallets';
+  const bagsPerPallet = parseFloat(bagsPerPalletEl.value) || 0;
+  const bagWeight = parseFloat(bagWeightEl.value) || 0;
+  const pallets = parseLocaleNumber(palletsInputEl.value);
+  const totalKg = pallets * bagsPerPallet * bagWeight;
+  const tons = totalKg / 1000;
+  tonsInputEl.value = tons > 0 ? formatTons(tons).replace(',', '.') : '';
+  palletsOutputEl.textContent = Math.floor(pallets);
+  bagsRemainderOutputEl.textContent = '0';
+  checkCustomerWarning();
+}
+
+function computeFromTons(){
+  lastEdited = 'tons';
+  const bagsPerPallet = parseFloat(bagsPerPalletEl.value) || 0;
+  const bagWeight = parseFloat(bagWeightEl.value) || 0.0001;
+  const tons = parseLocaleNumber(tonsInputEl.value);
+  const totalKg = tons * 1000;
+  let totalBags = totalKg / bagWeight;
+  totalBags = Math.round(totalBags * 1000) / 1000;
+  const pallets = bagsPerPallet > 0 ? Math.floor(totalBags / bagsPerPallet) : 0;
+  let remainder = totalBags - (pallets * bagsPerPallet);
+  remainder = Math.round(remainder);
+  palletsInputEl.value = pallets > 0 ? pallets : '';
+  palletsOutputEl.textContent = pallets;
+  bagsRemainderOutputEl.textContent = remainder;
+  checkCustomerWarning();
+}
+
+function recompute(){
+  lastEdited === 'pallets' ? computeFromPallets() : computeFromTons();
+}
+
+palletsInputEl.addEventListener('input', computeFromPallets);
+tonsInputEl.addEventListener('input', computeFromTons);
+bagsPerPalletEl.addEventListener('input', recompute);
+bagWeightEl.addEventListener('input', recompute);
+powderTypeEl.addEventListener('change', checkCustomerWarning);
+
+function resetFields(){
+  palletsInputEl.value = '';
+  tonsInputEl.value = '';
+  palletsOutputEl.textContent = '0';
+  bagsRemainderOutputEl.textContent = '0';
+}
+
+function loadHistory(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function persistHistory(list){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){}
+}
+function renderHistory(){
+  const list = loadHistory();
+  const container = document.getElementById('historyList');
+  if(list.length === 0){
+    container.innerHTML = '<div class="empty-history">لا توجد عمليات محفوظة بعد</div>';
+    return;
+  }
+  container.innerHTML = list.slice().reverse().map(item => {
+    const timeStr = new Date(item.time).toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const mainLine = item.remainder > 0
+      ? `${formatTons(item.tons)} طن ↔ ${item.pallets} منصة + ${item.remainder} كيس`
+      : `${item.pallets} منصة ↔ ${formatTons(item.tons)} طن`;
+    const subLine = item.customerName
+      ? `${item.customerName} · ${item.powderType || ''} · ${item.bagsPerPallet} كيس/منصة × ${item.bagWeight} كغ`
+      : `${item.powderType || ''} · ${item.bagsPerPallet} كيس/منصة × ${item.bagWeight} كغ`;
+    return `<div class="history-item">
+      <div>
+        <div class="h-main">${mainLine}</div>
+        <div class="h-sub">${subLine}</div>
+      </div>
+      <div class="h-time">${timeStr}</div>
+    </div>`;
+  }).join('');
+}
+
+function saveToHistory(){
+  const bagsPerPallet = parseFloat(bagsPerPalletEl.value) || 0;
+  const bagWeight = parseFloat(bagWeightEl.value) || 0;
+  const tons = parseLocaleNumber(tonsInputEl.value);
+  const pallets = parseInt(palletsOutputEl.textContent) || 0;
+  const remainder = parseInt(bagsRemainderOutputEl.textContent) || 0;
+  const type = powderTypeEl.value;
+  if(tons <= 0 && pallets <= 0){ return; }
+
+  const customer = getSelectedCustomer();
+  if(customer){
+    const order = customer.orders ? customer.orders[type] : null;
+    if(!order || order.total <= 0){
+      checkCustomerWarning();
+      return; // blocked: no order registered for this powder type
+    }
+    const remaining = order.total - order.delivered;
+    if(tons > remaining + 0.0001){
+      checkCustomerWarning();
+      return; // blocked: exceeds remaining balance for this type
+    }
+    let list = loadCustomers();
+    const idx = list.findIndex(c => c.id === customer.id);
+    if(idx > -1){
+      list[idx].orders[type].delivered = Math.round((list[idx].orders[type].delivered + tons) * 1000) / 1000;
+      const newRemaining = list[idx].orders[type].total - list[idx].orders[type].delivered;
+      if(newRemaining <= 0.0001){
+        // العميل استلم كامل كمية هذا النوع: نحذف هذا النوع فقط، ونبقي الأنواع الأخرى إن وجدت
+        delete list[idx].orders[type];
+        customerWarningEl.style.background = 'var(--accent)';
+        customerWarningEl.textContent = `تم تسليم كامل كمية ${customer.name} من نوع ${type}`;
+        customerWarningEl.style.display = 'block';
+      }
+      // لو ما بقيت أي طلبية نشطة لهذا العميل، نحذفه بالكامل
+      const remainingTypes = Object.keys(list[idx].orders).filter(t => list[idx].orders[t].total > list[idx].orders[t].delivered + 0.0001);
+      if(remainingTypes.length === 0){
+        list = list.filter(c => c.id !== customer.id);
+        persistCustomers(list);
+        renderCustomerSelect('');
+      } else {
+        persistCustomers(list);
+        renderCustomerSelect(customer.id);
+      }
+    }
+  }
+
+  const history = loadHistory();
+  history.push({
+    time: Date.now(),
+    bagsPerPallet, bagWeight, pallets, tons, remainder,
+    customerName: customer ? customer.name : null,
+    powderType: type
+  });
+  persistHistory(history);
+  renderHistory();
+}
+
+function clearHistory(){
+  persistHistory([]);
+  renderHistory();
+}
+
+renderCustomerSelect('');
+renderHistory();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
