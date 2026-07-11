@@ -35,7 +35,21 @@
     font-family:'Segoe UI', Tahoma, Arial, sans-serif;
     color:var(--milk);
     padding:14px;
+    transition:background-image 0.4s ease;
   }
+  body.theme-26{
+    --accent:#e0a938;
+    --accent-dim:#a17c2a;
+    --navy:#2e2412;
+    --navy-deep:#1c1608;
+    --steel:#5a4726;
+    background-image:radial-gradient(circle at 50% -10%, #5a4726 0%, #1c1608 65%);
+  }
+  body.theme-26 .screen:not(.readonly) .screen-value{
+    color:#f4c667;
+    text-shadow:0 0 10px rgba(244,198,103,0.4);
+  }
+  body.theme-26 .screen:not(.readonly) .screen-value input{color:#f4c667;}
   .wrap{max-width:460px;margin:0 auto;}
   header{text-align:center;padding:6px 0 18px;}
   header .badge{
@@ -71,6 +85,28 @@
     text-align:center;font-family:inherit;
   }
   .field select:focus{outline:none;border-color:var(--accent);}
+
+  .locked-zone{
+    opacity:0.32;filter:grayscale(55%);pointer-events:none;
+    transition:opacity 0.25s ease, filter 0.25s ease;
+  }
+
+  .powder-select{
+    width:100%;border:none;border-radius:12px;color:#fff;font-size:20px;font-weight:700;
+    padding:16px 14px;text-align:center;font-family:inherit;appearance:none;-webkit-appearance:none;
+    background-color:var(--accent);
+    background-image:linear-gradient(rgba(255,255,255,0.08),rgba(255,255,255,0.08)),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat:no-repeat;
+    background-position:center, left 12px center;
+    background-size:auto, 22px 22px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);
+    transition:background-color 0.2s ease;
+  }
+  .powder-select.type-0{background-color:var(--accent);}
+  .powder-select.type-26{background-color:var(--amber);color:#2a1c02;}
+  .powder-select.type-26 option{color:#000;}
+  .powder-select option{color:#000;font-weight:600;}
 
   .direction-toggle{display:flex;background:var(--navy-deep);border-radius:10px;padding:4px;margin-bottom:14px;gap:4px;}
   .direction-toggle button{
@@ -186,16 +222,19 @@
     <div class="settings-row">
       <div class="field">
         <label>عدد الأكياس في المنصة</label>
-        <input type="number" id="bagsPerPallet" value="50" min="1" inputmode="numeric">
+        <input type="number" id="bagsPerPallet" placeholder="مثال: 50" min="1" inputmode="numeric">
       </div>
-      <div class="field">
+      <div class="field" id="bagWeightField">
         <label>وزن الكيس (كغ)</label>
         <input type="number" id="bagWeight" value="25" min="0.1" step="0.5" inputmode="decimal">
       </div>
     </div>
+    <div id="lockHint1" style="margin-top:10px;font-size:12px;color:var(--amber);display:none;">
+      🔒 أدخل عدد الأكياس في المنصة أولاً لتفعيل باقي التطبيق
+    </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="customerCard">
     <h2>العميل ورصيده (Solde)</h2>
     <div class="settings-row">
       <div class="field" style="flex:2">
@@ -237,14 +276,13 @@
   <div class="card">
     <h2>الحساب (اكتب في أي خانة)</h2>
 
-    <div class="settings-row" style="margin-bottom:12px">
-      <div class="field">
-        <label>نوع البودرة المسلّمة</label>
-        <select id="powderType">
-          <option value="0%">0% دسم</option>
-          <option value="26%">26% دسم</option>
-        </select>
-      </div>
+    <div id="calcBody">
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:11px;color:var(--text-soft);margin-bottom:6px;">نوع البودرة المسلّمة</label>
+      <select id="powderType" class="powder-select">
+        <option value="0%">0% دسم</option>
+        <option value="26%">26% دسم</option>
+      </select>
     </div>
 
     <div id="screenPallets" class="screen">
@@ -277,6 +315,10 @@
     <div class="actions">
       <button class="btn-primary" onclick="saveToHistory()">حفظ في السجل</button>
       <button class="btn-secondary" onclick="resetFields()">تصفير</button>
+    </div>
+    </div>
+    <div id="lockHint2" style="margin-top:10px;font-size:12px;color:var(--amber);display:none;">
+      🔒 أكمل إعدادات المنصة أولاً (عدد الأكياس ووزن الكيس)
     </div>
   </div>
 
@@ -444,6 +486,11 @@ let lastEdited = 'pallets';
 
 const bagsPerPalletEl = document.getElementById('bagsPerPallet');
 const bagWeightEl = document.getElementById('bagWeight');
+const bagWeightFieldEl = document.getElementById('bagWeightField');
+const customerCardEl = document.getElementById('customerCard');
+const calcBodyEl = document.getElementById('calcBody');
+const lockHint1El = document.getElementById('lockHint1');
+const lockHint2El = document.getElementById('lockHint2');
 const palletsInputEl = document.getElementById('palletsInput');
 const tonsInputEl = document.getElementById('tonsInput');
 const palletsOutputEl = document.getElementById('palletsOutput');
@@ -605,7 +652,20 @@ palletsInputEl.addEventListener('input', computeFromPallets);
 tonsInputEl.addEventListener('input', computeFromTons);
 bagsPerPalletEl.addEventListener('input', recompute);
 bagWeightEl.addEventListener('input', recompute);
+function updatePowderSelectColor(){
+  if(powderTypeEl.value === '26%'){
+    powderTypeEl.classList.remove('type-0');
+    powderTypeEl.classList.add('type-26');
+    document.body.classList.add('theme-26');
+  } else {
+    powderTypeEl.classList.remove('type-26');
+    powderTypeEl.classList.add('type-0');
+    document.body.classList.remove('theme-26');
+  }
+}
 powderTypeEl.addEventListener('change', checkCustomerWarning);
+powderTypeEl.addEventListener('change', updatePowderSelectColor);
+updatePowderSelectColor();
 
 function resetFields(){
   palletsInputEl.value = '';
@@ -712,6 +772,26 @@ function clearHistory(){
 
 renderCustomerSelect('');
 renderHistory();
+
+function setZoneLocked(zoneEl, locked){
+  zoneEl.classList.toggle('locked-zone', locked);
+  zoneEl.querySelectorAll('input, select, button').forEach(el => { el.disabled = locked; });
+}
+
+function applyLockChain(){
+  const bagsOK = parseFloat(bagsPerPalletEl.value) > 0;
+  setZoneLocked(bagWeightFieldEl, !bagsOK);
+  lockHint1El.style.display = bagsOK ? 'none' : 'block';
+
+  const weightOK = bagsOK && parseFloat(bagWeightEl.value) > 0;
+  setZoneLocked(customerCardEl, !weightOK);
+  setZoneLocked(calcBodyEl, !weightOK);
+  lockHint2El.style.display = weightOK ? 'none' : 'block';
+}
+
+bagsPerPalletEl.addEventListener('input', applyLockChain);
+bagWeightEl.addEventListener('input', applyLockChain);
+applyLockChain();
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
