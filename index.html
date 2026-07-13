@@ -428,7 +428,7 @@
     <div id="historyList"></div>
     <div class="actions">
       <button class="btn-secondary" onclick="undoLastOperation()">↩️ تراجع عن آخر عملية</button>
-      <button class="btn-secondary" onclick="exportHistory()">📤 تصدير السجل (CSV)</button>
+      <button class="btn-secondary" onclick="exportHistory()">📤 تصدير السجل (Excel)</button>
       <button class="btn-danger" onclick="clearHistory()">مسح السجل بالكامل</button>
     </div>
   </div>
@@ -879,45 +879,73 @@ function renderHistory(){
   }).join('');
 }
 
-function exportHistory(){
+function loadXLSXLibrary(){
+  return new Promise((resolve, reject) => {
+    if(window.XLSX){ resolve(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('تعذر تحميل مكتبة Excel'));
+    document.head.appendChild(script);
+  });
+}
+
+async function exportHistory(){
   const list = getFilteredHistory().slice().reverse();
   if(list.length === 0){ showToast('لا توجد بيانات لتصديرها'); return; }
-  let csv = '\uFEFFجدول العمليات (Historique)\n';
-  csv += 'التاريخ,العميل,نوع البودرة,عدد المنصات,الوزن بالطن,الأكياس المتبقية,عدد الأكياس في المنصة,وزن الكيس\n';
-  list.forEach(item => {
-    const dateStr = new Date(item.time).toLocaleString('fr-FR');
-    const customer = item.customerName || 'بدون عميل';
-    csv += `"${dateStr}","${customer}","${item.powderType || ''}",${item.pallets},${formatTons(item.tons)},${item.remainder},${item.bagsPerPallet},${item.bagWeight}\n`;
-  });
 
-  csv += '\nجدول أرصدة العملاء الحالية (Solde)\n';
-  csv += 'اسم العميل,نوع البودرة,الكمية الكلية (طن),المُسلّم (طن),المتبقي - الصولد (طن)\n';
-  const customers = loadCustomers();
-  if(customers.length === 0){
-    csv += 'لا يوجد عملاء نشطون حالياً\n';
-  } else {
-    customers.forEach(c => {
-      const types = Object.keys(c.orders || {});
-      if(types.length === 0){ return; }
-      types.forEach(t => {
-        const o = c.orders[t];
-        const remaining = o.total - o.delivered;
-        csv += `"${c.name}","${t}",${formatTons(o.total)},${formatTons(o.delivered)},${formatTons(remaining)}\n`;
-      });
-    });
+  showToast('⏳ جاري تجهيز ملف Excel...');
+  try{
+    await loadXLSXLibrary();
+  }catch(e){
+    showToast('⚠️ يلزم اتصال إنترنت لأول مرة لتصدير Excel');
+    return;
   }
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const historyRows = [
+    ['التاريخ','العميل','نوع البودرة','عدد المنصات','الوزن بالطن','الأكياس المتبقية','عدد الأكياس في المنصة','وزن الكيس']
+  ];
+  list.forEach(item => {
+    const dateStr = new Date(item.time).toLocaleString('fr-FR');
+    historyRows.push([
+      dateStr,
+      item.customerName || 'بدون عميل',
+      item.powderType || '',
+      item.pallets,
+      parseFloat(formatTons(item.tons)),
+      item.remainder,
+      item.bagsPerPallet,
+      item.bagWeight
+    ]);
+  });
+
+  const balanceRows = [
+    ['اسم العميل','نوع البودرة','الكمية الكلية (طن)','المُسلّم (طن)','المتبقي - الصولد (طن)']
+  ];
+  const customers = loadCustomers();
+  customers.forEach(c => {
+    const types = Object.keys(c.orders || {});
+    types.forEach(t => {
+      const o = c.orders[t];
+      const remaining = o.total - o.delivered;
+      balanceRows.push([c.name, t, parseFloat(formatTons(o.total)), parseFloat(formatTons(o.delivered)), parseFloat(formatTons(remaining))]);
+    });
+  });
+  if(balanceRows.length === 1){
+    balanceRows.push(['لا يوجد عملاء نشطون حالياً', '', '', '', '']);
+  }
+
+  const wb = XLSX.utils.book_new();
+  const wsHistory = XLSX.utils.aoa_to_sheet(historyRows);
+  wsHistory['!cols'] = [{wch:18},{wch:20},{wch:12},{wch:12},{wch:12},{wch:14},{wch:16},{wch:12}];
+  const wsBalance = XLSX.utils.aoa_to_sheet(balanceRows);
+  wsBalance['!cols'] = [{wch:20},{wch:12},{wch:16},{wch:14},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, wsHistory, 'السجل');
+  XLSX.utils.book_append_sheet(wb, wsBalance, 'أرصدة العملاء');
+
   const stamp = new Date().toISOString().slice(0,10);
-  a.href = url;
-  a.download = `سجل_الحليب_${stamp}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-  showToast('📤 تم تصدير السجل والأرصدة بنجاح');
+  XLSX.writeFile(wb, `سجل_الحليب_${stamp}.xlsx`);
+  showToast('📤 تم تصدير ملف Excel بنجاح');
 }
 
 let pendingAction = null;
