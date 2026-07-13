@@ -435,6 +435,15 @@
 </div>
 </div>
 
+<div id="centerAlertOverlay" style="position:fixed;inset:0;background:rgba(10,20,32,0.94);backdrop-filter:blur(3px);z-index:1050;display:none;align-items:center;justify-content:center;padding:20px;">
+  <div style="max-width:340px;width:100%;text-align:center;background:var(--navy);border-radius:18px;padding:24px 20px;border:2px solid var(--danger);box-shadow:0 14px 34px rgba(0,0,0,0.55);">
+    <div style="font-size:38px;margin-bottom:10px;">⛔</div>
+    <div style="font-size:13px;color:var(--danger);font-weight:800;letter-spacing:1px;margin-bottom:8px;">تنبيه تجاوز الرصيد</div>
+    <div id="centerAlertMessage" style="font-size:14.5px;color:var(--milk);margin-bottom:20px;line-height:1.8;font-weight:600;white-space:pre-line;"></div>
+    <button class="btn-primary" style="width:100%;" onclick="closeCenterAlert()">حسناً، فهمت</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -873,12 +882,31 @@ function renderHistory(){
 function exportHistory(){
   const list = getFilteredHistory().slice().reverse();
   if(list.length === 0){ showToast('لا توجد بيانات لتصديرها'); return; }
-  let csv = '\uFEFFالتاريخ,العميل,نوع البودرة,عدد المنصات,الوزن بالطن,الأكياس المتبقية,عدد الأكياس في المنصة,وزن الكيس\n';
+  let csv = '\uFEFFجدول العمليات (Historique)\n';
+  csv += 'التاريخ,العميل,نوع البودرة,عدد المنصات,الوزن بالطن,الأكياس المتبقية,عدد الأكياس في المنصة,وزن الكيس\n';
   list.forEach(item => {
     const dateStr = new Date(item.time).toLocaleString('fr-FR');
     const customer = item.customerName || 'بدون عميل';
     csv += `"${dateStr}","${customer}","${item.powderType || ''}",${item.pallets},${formatTons(item.tons)},${item.remainder},${item.bagsPerPallet},${item.bagWeight}\n`;
   });
+
+  csv += '\nجدول أرصدة العملاء الحالية (Solde)\n';
+  csv += 'اسم العميل,نوع البودرة,الكمية الكلية (طن),المُسلّم (طن),المتبقي - الصولد (طن)\n';
+  const customers = loadCustomers();
+  if(customers.length === 0){
+    csv += 'لا يوجد عملاء نشطون حالياً\n';
+  } else {
+    customers.forEach(c => {
+      const types = Object.keys(c.orders || {});
+      if(types.length === 0){ return; }
+      types.forEach(t => {
+        const o = c.orders[t];
+        const remaining = o.total - o.delivered;
+        csv += `"${c.name}","${t}",${formatTons(o.total)},${formatTons(o.delivered)},${formatTons(remaining)}\n`;
+      });
+    });
+  }
+
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -889,7 +917,7 @@ function exportHistory(){
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 2000);
-  showToast('📤 تم تصدير السجل بنجاح');
+  showToast('📤 تم تصدير السجل والأرصدة بنجاح');
 }
 
 let pendingAction = null;
@@ -980,6 +1008,14 @@ function saveToHistory(){
   commitSaveToHistory(data);
 }
 
+function showCenterAlert(message){
+  document.getElementById('centerAlertMessage').textContent = message;
+  document.getElementById('centerAlertOverlay').style.display = 'flex';
+}
+function closeCenterAlert(){
+  document.getElementById('centerAlertOverlay').style.display = 'none';
+}
+
 function commitSaveToHistory(data){
   const { bagsPerPallet, bagWeight, tons, pallets, remainder, type, customer } = data;
   let undoInfo = null;
@@ -988,11 +1024,13 @@ function commitSaveToHistory(data){
     const order = customer.orders ? customer.orders[type] : null;
     if(!order || order.total <= 0){
       checkCustomerWarning();
+      showCenterAlert(`${customer.name} ما عنده طلبية مسجلة لنوع ${type}.\nلا يمكن إتمام العملية.`);
       return; // blocked: no order registered for this powder type
     }
     const remaining = order.total - order.delivered;
     if(tons > remaining + 0.0001){
       checkCustomerWarning();
+      showCenterAlert(`الكمية المدخلة (${formatTons(tons)} طن) تتجاوز رصيد ${customer.name} المتبقي من نوع ${type}.\n\nالمتبقي الفعلي: ${formatTons(remaining)} طن\n\nلا يمكن إتمام العملية.`);
       return; // blocked: exceeds remaining balance for this type
     }
     let list = loadCustomers();
