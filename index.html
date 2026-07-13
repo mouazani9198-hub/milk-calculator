@@ -890,6 +890,16 @@ function loadXLSXLibrary(){
   });
 }
 
+function roundTo3(v){
+  return Math.round((parseFloat(v) || 0) * 1000) / 1000;
+}
+function setColumnNumberFormat(ws, colIndex, rowStart, rowEnd, format){
+  for(let r = rowStart; r <= rowEnd; r++){
+    const ref = XLSX.utils.encode_cell({ r, c: colIndex });
+    if(ws[ref]) ws[ref].z = format;
+  }
+}
+
 async function exportHistory(){
   const list = getFilteredHistory().slice().reverse();
   if(list.length === 0){ showToast('لا توجد بيانات لتصديرها'); return; }
@@ -911,7 +921,7 @@ async function exportHistory(){
       dateStr,
       item.customerName || 'بدون عميل',
       item.powderType || '',
-      parseFloat(formatTons(item.tons)),
+      roundTo3(item.tons),
       item.bagsPerPallet,
       item.bagWeight
     ]);
@@ -926,7 +936,7 @@ async function exportHistory(){
     types.forEach(t => {
       const o = c.orders[t];
       const remaining = o.total - o.delivered;
-      balanceRows.push([c.name, t, parseFloat(formatTons(o.total)), parseFloat(formatTons(o.delivered)), parseFloat(formatTons(remaining))]);
+      balanceRows.push([c.name, t, roundTo3(o.total), roundTo3(o.delivered), roundTo3(remaining)]);
     });
   });
   if(balanceRows.length === 1){
@@ -936,8 +946,14 @@ async function exportHistory(){
   const wb = XLSX.utils.book_new();
   const wsHistory = XLSX.utils.aoa_to_sheet(historyRows);
   wsHistory['!cols'] = [{wch:18},{wch:20},{wch:12},{wch:22},{wch:16},{wch:12}];
+  setColumnNumberFormat(wsHistory, 3, 1, historyRows.length - 1, '0.000');
+
   const wsBalance = XLSX.utils.aoa_to_sheet(balanceRows);
   wsBalance['!cols'] = [{wch:20},{wch:12},{wch:16},{wch:14},{wch:16}];
+  setColumnNumberFormat(wsBalance, 2, 1, balanceRows.length - 1, '0.000');
+  setColumnNumberFormat(wsBalance, 3, 1, balanceRows.length - 1, '0.000');
+  setColumnNumberFormat(wsBalance, 4, 1, balanceRows.length - 1, '0.000');
+
   XLSX.utils.book_append_sheet(wb, wsHistory, 'السجل');
   XLSX.utils.book_append_sheet(wb, wsBalance, 'أرصدة العملاء');
 
