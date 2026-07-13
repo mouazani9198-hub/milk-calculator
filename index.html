@@ -18,13 +18,15 @@
     --navy-deep:#0a1d30;
     --steel:#2c4a63;
     --milk:#f4f6f0;
-    --accent:#2f7dbf;
-    --accent-dim:#1e5a8f;
+    --accent:#2f8fd4;
+    --accent-dim:#1c5d85;
     --led-bg:#0d1f14;
     --led-fg:#7fe8a0;
-    --amber:#e0a938;
+    --amber:#dba53e;
     --danger:#c0553f;
     --text-soft:#c7d2dc;
+    --glass-tint: rgba(47,143,212,0.10);
+    --glass-border: rgba(130,190,235,0.20);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{
@@ -38,11 +40,13 @@
     transition:background-image 0.4s ease;
   }
   body.theme-26{
-    --accent:#e0a938;
-    --accent-dim:#a17c2a;
+    --accent:#dba53e;
+    --accent-dim:#8a6423;
     --navy:#2e2412;
     --navy-deep:#1c1608;
     --steel:#5a4726;
+    --glass-tint: rgba(219,165,62,0.11);
+    --glass-border: rgba(230,190,110,0.24);
     background-image:radial-gradient(circle at 50% -10%, #5a4726 0%, #1c1608 65%);
   }
   body.theme-26 .screen:not(.readonly) .screen-value{
@@ -58,11 +62,25 @@
   }
   header h1{font-size:19px;margin:0;font-weight:600;color:var(--milk);}
   header p{margin:4px 0 0;font-size:12px;color:var(--text-soft);}
+  .mode-pill{
+    display:inline-flex;align-items:center;gap:7px;
+    background:linear-gradient(rgba(8,16,26,0.5),rgba(8,16,26,0.5)), var(--glass-tint);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--glass-border);
+    padding:7px 18px;border-radius:20px;font-size:12.5px;font-weight:700;
+    margin-top:10px;color:var(--milk);transition:background 0.35s ease, border-color 0.35s ease;
+  }
+  .mode-pill .mode-icon{font-size:15px;}
 
   .card{
-    background:var(--navy);border-radius:16px;padding:16px;margin-bottom:14px;
-    box-shadow:0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
-    border:1px solid rgba(255,255,255,0.05);
+    background:
+      linear-gradient(rgba(8,16,26,0.55), rgba(8,16,26,0.55)),
+      var(--glass-tint);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border-radius:18px;padding:16px;margin-bottom:14px;
+    box-shadow:0 10px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+    border:1px solid var(--glass-border);
+    transition:background 0.4s ease, border-color 0.4s ease;
   }
   .card h2{
     font-size:12px;letter-spacing:1px;color:var(--text-soft);margin:0 0 10px;
@@ -85,6 +103,16 @@
     text-align:center;font-family:inherit;
   }
   .field select:focus{outline:none;border-color:var(--accent);}
+
+  #toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+    background:var(--accent);color:#06210f;font-weight:700;font-size:13px;
+    padding:12px 20px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    opacity:0;pointer-events:none;transition:opacity 0.25s ease, transform 0.25s ease;
+    z-index:1100;max-width:90%;text-align:center;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  body.theme-26 #toast{background:var(--amber);color:#2a1c02;}
 
   .locked-zone{
     opacity:0.32;filter:grayscale(55%);pointer-events:none;
@@ -163,17 +191,31 @@
   }
   .keypad-btn:active{background:var(--steel);}
 
-  .order-line{
-    display:flex;justify-content:space-between;align-items:center;
-    background:var(--navy-deep);border-radius:8px;padding:9px 12px;margin-bottom:8px;
-    font-size:13px;
+  .order-card{
+    background:rgba(255,255,255,0.05);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:14px;padding:14px 16px;margin-bottom:10px;
+    position:relative;overflow:hidden;
+    box-shadow:0 4px 14px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04);
   }
-  .order-line .type-badge{
-    background:var(--accent-dim);color:var(--milk);font-size:11px;
-    padding:2px 8px;border-radius:10px;margin-left:8px;
+  .order-card::before{content:'';position:absolute;top:0;bottom:0;right:0;width:5px;}
+  .order-card.type-card-0::before{background:var(--accent);box-shadow:0 0 8px var(--accent);}
+  .order-card.type-card-26::before{background:var(--amber);box-shadow:0 0 8px var(--amber);}
+  .order-card .order-type-badge{
+    display:inline-block;font-size:13px;font-weight:800;color:#fff;
+    padding:5px 14px;border-radius:9px;margin-bottom:12px;letter-spacing:0.3px;
   }
-  .order-line .balance{color:var(--amber);font-weight:600;direction:ltr;}
-  .order-line .delivered{color:var(--text-soft);font-size:11px;}
+  .order-card.type-card-0 .order-type-badge{background:var(--accent);}
+  .order-card.type-card-26 .order-type-badge{background:var(--amber);color:#2a1c02;}
+  .order-card .order-stats{display:flex;gap:6px;}
+  .order-card .stat{flex:1;text-align:center;background:rgba(255,255,255,0.035);border-radius:9px;padding:8px 4px;}
+  .order-card .stat .stat-label{font-size:10px;color:var(--text-soft);margin-bottom:5px;letter-spacing:0.2px;}
+  .order-card .stat .stat-value{font-size:17px;font-weight:800;direction:ltr;color:var(--milk);}
+  .order-card .stat.remaining{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);}
+  .order-card .stat.remaining .stat-value{font-size:21px;}
+  .order-card.type-card-0 .stat.remaining .stat-value{color:var(--accent);text-shadow:0 0 10px rgba(74,143,178,0.4);}
+  .order-card.type-card-26 .stat.remaining .stat-value{color:var(--amber);text-shadow:0 0 10px rgba(224,169,56,0.4);}
 </style>
 </head>
 <body>
@@ -206,12 +248,45 @@
   </div>
 </div>
 
+<div id="confirmPinOverlay" style="position:fixed;inset:0;background:rgba(10,20,32,0.92);backdrop-filter:blur(2px);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;">
+  <div style="max-width:340px;width:100%;text-align:center;background:var(--navy);border-radius:18px;padding:22px 18px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 12px 30px rgba(0,0,0,0.5);">
+    <div style="font-size:28px;margin-bottom:6px;">⚠️</div>
+    <div id="confirmPinMessage" style="font-size:13px;color:var(--milk);margin-bottom:16px;line-height:1.6;"></div>
+    <div style="font-size:12px;color:var(--text-soft);margin-bottom:14px;">أدخل الرمز السري للتأكيد والمتابعة</div>
+    <div id="confirmPinDots" style="display:flex;justify-content:center;gap:14px;margin-bottom:20px;">
+      <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+    </div>
+    <div id="confirmPinError" style="color:var(--danger);font-size:12px;min-height:18px;margin-bottom:8px;"></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+      <button class="keypad-btn" onclick="confirmPinPress('1')">1</button>
+      <button class="keypad-btn" onclick="confirmPinPress('2')">2</button>
+      <button class="keypad-btn" onclick="confirmPinPress('3')">3</button>
+      <button class="keypad-btn" onclick="confirmPinPress('4')">4</button>
+      <button class="keypad-btn" onclick="confirmPinPress('5')">5</button>
+      <button class="keypad-btn" onclick="confirmPinPress('6')">6</button>
+      <button class="keypad-btn" onclick="confirmPinPress('7')">7</button>
+      <button class="keypad-btn" onclick="confirmPinPress('8')">8</button>
+      <button class="keypad-btn" onclick="confirmPinPress('9')">9</button>
+      <button class="keypad-btn" style="visibility:hidden"></button>
+      <button class="keypad-btn" onclick="confirmPinPress('0')">0</button>
+      <button class="keypad-btn" onclick="confirmPinBackspace()">⌫</button>
+    </div>
+    <button class="btn-secondary" style="margin-top:16px;width:100%;" onclick="cancelDuplicateConfirmation()">إلغاء العملية</button>
+  </div>
+</div>
+
 <div id="appContent" style="display:none;">
 <div class="wrap">
   <header>
     <div class="badge">أداة تحويل الوزن</div>
     <h1>حاسبة المنصات والطن</h1>
     <p>تحويل بين عدد المنصات والوزن بالطن حسب تركيبة كل شحنة</p>
+    <div>
+      <div id="modeIndicator" class="mode-pill">
+        <span class="mode-icon" id="modeIndicatorIcon">💧</span>
+        <span id="modeIndicatorText">الوضع الحالي: 0% دسم</span>
+      </div>
+    </div>
     <div style="margin-top:8px;">
       <button onclick="openChangePin()" style="background:none;border:1px solid rgba(255,255,255,0.15);color:var(--text-soft);font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;">🔒 تغيير الرمز السري</button>
     </div>
@@ -276,6 +351,16 @@
   <div class="card">
     <h2>الحساب (اكتب في أي خانة)</h2>
 
+    <div id="bagsReconfirmBanner" style="display:none;margin-bottom:14px;background:rgba(224,169,56,0.14);border:1px solid var(--amber);border-radius:12px;padding:12px 14px;">
+      <div style="font-size:12.5px;color:var(--milk);margin-bottom:10px;line-height:1.6;">
+        🔒 تغيّر العميل أو نوع البودرة — أكّد عدد الأكياس في المنصة الحالية قبل إجراء عملية جديدة
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="number" id="reconfirmBagsInput" min="1" style="flex:1;background:var(--navy-deep);border:1px solid rgba(255,255,255,0.15);color:var(--milk);border-radius:8px;padding:10px;font-size:15px;text-align:center;">
+        <button class="btn-primary" style="flex:0 0 auto;padding:10px 16px;" onclick="confirmBagsReconfirmation()">تأكيد ✅</button>
+      </div>
+    </div>
+
     <div id="calcBody">
     <div style="margin-bottom:14px">
       <label style="display:block;font-size:11px;color:var(--text-soft);margin-bottom:6px;">نوع البودرة المسلّمة</label>
@@ -324,13 +409,33 @@
 
   <div class="card">
     <h2>السجل (Historique)</h2>
+    <div class="settings-row" style="margin-bottom:10px;">
+      <div class="field">
+        <label>تصفية حسب العميل</label>
+        <select id="historyFilterCustomer" onchange="renderHistory()">
+          <option value="">الكل</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>تصفية حسب النوع</label>
+        <select id="historyFilterType" onchange="renderHistory()">
+          <option value="">الكل</option>
+          <option value="0%">0% دسم</option>
+          <option value="26%">26% دسم</option>
+        </select>
+      </div>
+    </div>
     <div id="historyList"></div>
     <div class="actions">
+      <button class="btn-secondary" onclick="undoLastOperation()">↩️ تراجع عن آخر عملية</button>
+      <button class="btn-secondary" onclick="exportHistory()">📤 تصدير السجل (CSV)</button>
       <button class="btn-danger" onclick="clearHistory()">مسح السجل بالكامل</button>
     </div>
   </div>
 </div>
 </div>
+
+<div id="toast"></div>
 
 <script>
 const PIN_KEY = 'milk_calc_pin_v1';
@@ -522,8 +627,22 @@ function getSelectedCustomer(){
   const list = loadCustomers();
   return list.find(c => c.id === customerSelectEl.value) || null;
 }
+function updatePowderTypeOptions(){
+  const c = getSelectedCustomer();
+  const previousValue = powderTypeEl.value;
+  let allowedTypes = POWDER_TYPES;
+  if(c){
+    const active = POWDER_TYPES.filter(t => c.orders && c.orders[t] && (c.orders[t].total - c.orders[t].delivered) > 0.0001);
+    if(active.length > 0){ allowedTypes = active; }
+  }
+  powderTypeEl.innerHTML = allowedTypes.map(t => `<option value="${t}">${t} دسم</option>`).join('');
+  powderTypeEl.value = allowedTypes.includes(previousValue) ? previousValue : allowedTypes[0];
+  updatePowderSelectColor();
+}
+
 function renderCustomerOrders(){
   const c = getSelectedCustomer();
+  updatePowderTypeOptions();
   if(!c){
     customerOrdersListEl.innerHTML = '';
     customerWarningEl.style.display = 'none';
@@ -537,9 +656,23 @@ function renderCustomerOrders(){
   customerOrdersListEl.innerHTML = types.map(t => {
     const o = c.orders[t];
     const remaining = o.total - o.delivered;
-    return `<div class="order-line">
-      <div><span class="type-badge">${t}</span><span class="delivered">مُسلّم: ${formatTons(o.delivered)} طن</span></div>
-      <div class="balance">متبقي: ${formatTons(remaining)} طن</div>
+    const typeClass = t === '26%' ? 'type-card-26' : 'type-card-0';
+    return `<div class="order-card ${typeClass}">
+      <div class="order-type-badge">${t} دسم</div>
+      <div class="order-stats">
+        <div class="stat">
+          <div class="stat-label">الكمية الكلية</div>
+          <div class="stat-value">${formatTons(o.total)}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">مُسلّم</div>
+          <div class="stat-value">${formatTons(o.delivered)}</div>
+        </div>
+        <div class="stat remaining">
+          <div class="stat-label">المتبقي (Solde)</div>
+          <div class="stat-value">${formatTons(remaining)}</div>
+        </div>
+      </div>
     </div>`;
   }).join('');
 }
@@ -653,14 +786,20 @@ tonsInputEl.addEventListener('input', computeFromTons);
 bagsPerPalletEl.addEventListener('input', recompute);
 bagWeightEl.addEventListener('input', recompute);
 function updatePowderSelectColor(){
+  const modeIcon = document.getElementById('modeIndicatorIcon');
+  const modeText = document.getElementById('modeIndicatorText');
   if(powderTypeEl.value === '26%'){
     powderTypeEl.classList.remove('type-0');
     powderTypeEl.classList.add('type-26');
     document.body.classList.add('theme-26');
+    if(modeIcon) modeIcon.textContent = '🧈';
+    if(modeText) modeText.textContent = 'الوضع الحالي: 26% دسم';
   } else {
     powderTypeEl.classList.remove('type-26');
     powderTypeEl.classList.add('type-0');
     document.body.classList.remove('theme-26');
+    if(modeIcon) modeIcon.textContent = '💧';
+    if(modeText) modeText.textContent = 'الوضع الحالي: 0% دسم';
   }
 }
 powderTypeEl.addEventListener('change', checkCustomerWarning);
@@ -683,11 +822,34 @@ function loadHistory(){
 function persistHistory(list){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }catch(e){}
 }
-function renderHistory(){
+function getFilteredHistory(){
   const list = loadHistory();
+  const customerFilter = document.getElementById('historyFilterCustomer').value;
+  const typeFilter = document.getElementById('historyFilterType').value;
+  return list.filter(item => {
+    if(customerFilter === '__none__' && item.customerName){ return false; }
+    if(customerFilter && customerFilter !== '__none__' && item.customerName !== customerFilter){ return false; }
+    if(typeFilter && item.powderType !== typeFilter){ return false; }
+    return true;
+  });
+}
+
+function populateHistoryCustomerFilter(){
+  const sel = document.getElementById('historyFilterCustomer');
+  const current = sel.value;
+  const list = loadHistory();
+  const names = [...new Set(list.map(i => i.customerName).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">الكل</option><option value="__none__">بدون عميل</option>' +
+    names.map(n => `<option value="${n}">${n}</option>`).join('');
+  if([...sel.options].some(o => o.value === current)){ sel.value = current; }
+}
+
+function renderHistory(){
+  populateHistoryCustomerFilter();
+  const list = getFilteredHistory();
   const container = document.getElementById('historyList');
   if(list.length === 0){
-    container.innerHTML = '<div class="empty-history">لا توجد عمليات محفوظة بعد</div>';
+    container.innerHTML = '<div class="empty-history">لا توجد عمليات مطابقة للتصفية الحالية</div>';
     return;
   }
   container.innerHTML = list.slice().reverse().map(item => {
@@ -708,6 +870,82 @@ function renderHistory(){
   }).join('');
 }
 
+function exportHistory(){
+  const list = getFilteredHistory().slice().reverse();
+  if(list.length === 0){ showToast('لا توجد بيانات لتصديرها'); return; }
+  let csv = '\uFEFFالتاريخ,العميل,نوع البودرة,عدد المنصات,الوزن بالطن,الأكياس المتبقية,عدد الأكياس في المنصة,وزن الكيس\n';
+  list.forEach(item => {
+    const dateStr = new Date(item.time).toLocaleString('fr-FR');
+    const customer = item.customerName || 'بدون عميل';
+    csv += `"${dateStr}","${customer}","${item.powderType || ''}",${item.pallets},${formatTons(item.tons)},${item.remainder},${item.bagsPerPallet},${item.bagWeight}\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `سجل_الحليب_${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  showToast('📤 تم تصدير السجل بنجاح');
+}
+
+let pendingAction = null;
+let confirmPinBuffer = '';
+const confirmPinOverlayEl = document.getElementById('confirmPinOverlay');
+const confirmPinMessageEl = document.getElementById('confirmPinMessage');
+const confirmPinDotsEl = document.getElementById('confirmPinDots');
+const confirmPinErrorEl = document.getElementById('confirmPinError');
+
+function renderConfirmPinDots(){
+  const dots = confirmPinDotsEl.querySelectorAll('.pin-dot');
+  dots.forEach((d,i) => d.classList.toggle('filled', i < confirmPinBuffer.length));
+}
+function confirmPinPress(digit){
+  if(confirmPinBuffer.length >= 4) return;
+  confirmPinBuffer += digit;
+  renderConfirmPinDots();
+  confirmPinErrorEl.textContent = '';
+  if(confirmPinBuffer.length === 4){
+    setTimeout(checkConfirmPin, 150);
+  }
+}
+function confirmPinBackspace(){
+  confirmPinBuffer = confirmPinBuffer.slice(0, -1);
+  renderConfirmPinDots();
+}
+function checkConfirmPin(){
+  const savedPin = localStorage.getItem(PIN_KEY);
+  if(confirmPinBuffer === savedPin){
+    const action = pendingAction;
+    closeConfirmPinModal();
+    if(action && action.type === 'save'){ commitSaveToHistory(action.data); }
+    else if(action && action.type === 'undo'){ performUndo(); }
+  } else {
+    confirmPinErrorEl.textContent = 'رمز غير صحيح، حاول مرة أخرى';
+    confirmPinBuffer = '';
+    renderConfirmPinDots();
+  }
+}
+function closeConfirmPinModal(){
+  confirmPinOverlayEl.style.display = 'none';
+  confirmPinBuffer = '';
+  pendingAction = null;
+}
+function cancelDuplicateConfirmation(){
+  closeConfirmPinModal();
+}
+function askConfirmation(action, message){
+  pendingAction = action;
+  confirmPinBuffer = '';
+  confirmPinMessageEl.textContent = message;
+  confirmPinErrorEl.textContent = '';
+  renderConfirmPinDots();
+  confirmPinOverlayEl.style.display = 'flex';
+}
+
 function saveToHistory(){
   const bagsPerPallet = parseFloat(bagsPerPalletEl.value) || 0;
   const bagWeight = parseFloat(bagWeightEl.value) || 0;
@@ -718,6 +956,34 @@ function saveToHistory(){
   if(tons <= 0 && pallets <= 0){ return; }
 
   const customer = getSelectedCustomer();
+  const customerNameForCheck = customer ? customer.name : null;
+  const data = { bagsPerPallet, bagWeight, tons, pallets, remainder, type, customer };
+
+  // تحذير التكرار: نفس العميل + نفس نوع البودرة + نفس الكمية، بعد ثانية أو أكثر من آخر حفظ
+  const existingHistory = loadHistory();
+  const lastEntry = existingHistory[existingHistory.length - 1];
+  if(lastEntry){
+    const sameCustomer = (lastEntry.customerName || null) === customerNameForCheck;
+    const sameType = lastEntry.powderType === type;
+    const sameQty = Math.abs((lastEntry.tons || 0) - tons) < 0.0005;
+    const gapMs = Date.now() - (lastEntry.time || 0);
+    if(sameCustomer && sameType && sameQty && gapMs >= 1000){
+      const who = customerNameForCheck || 'بدون عميل';
+      askConfirmation(
+        { type: 'save', data },
+        `أنت على وشك حفظ نفس الكمية (${formatTons(tons)} طن) من نفس نوع البودرة (${type}) لنفس العميل (${who}) مرة أخرى.`
+      );
+      return;
+    }
+  }
+
+  commitSaveToHistory(data);
+}
+
+function commitSaveToHistory(data){
+  const { bagsPerPallet, bagWeight, tons, pallets, remainder, type, customer } = data;
+  let undoInfo = null;
+
   if(customer){
     const order = customer.orders ? customer.orders[type] : null;
     if(!order || order.total <= 0){
@@ -732,6 +998,10 @@ function saveToHistory(){
     let list = loadCustomers();
     const idx = list.findIndex(c => c.id === customer.id);
     if(idx > -1){
+      const orderTotalBefore = list[idx].orders[type].total;
+      const orderDeliveredBefore = list[idx].orders[type].delivered;
+      const customerSnapshotBefore = JSON.parse(JSON.stringify(list[idx]));
+
       list[idx].orders[type].delivered = Math.round((list[idx].orders[type].delivered + tons) * 1000) / 1000;
       const newRemaining = list[idx].orders[type].total - list[idx].orders[type].delivered;
       if(newRemaining <= 0.0001){
@@ -743,7 +1013,8 @@ function saveToHistory(){
       }
       // لو ما بقيت أي طلبية نشطة لهذا العميل، نحذفه بالكامل
       const remainingTypes = Object.keys(list[idx].orders).filter(t => list[idx].orders[t].total > list[idx].orders[t].delivered + 0.0001);
-      if(remainingTypes.length === 0){
+      const customerFullyRemoved = remainingTypes.length === 0;
+      if(customerFullyRemoved){
         list = list.filter(c => c.id !== customer.id);
         persistCustomers(list);
         renderCustomerSelect('');
@@ -751,6 +1022,14 @@ function saveToHistory(){
         persistCustomers(list);
         renderCustomerSelect(customer.id);
       }
+
+      undoInfo = {
+        customerId: customer.id,
+        orderTotalBefore,
+        orderDeliveredBefore,
+        customerFullyRemoved,
+        customerSnapshotBefore
+      };
     }
   }
 
@@ -759,10 +1038,47 @@ function saveToHistory(){
     time: Date.now(),
     bagsPerPallet, bagWeight, pallets, tons, remainder,
     customerName: customer ? customer.name : null,
-    powderType: type
+    powderType: type,
+    _undo: undoInfo
   });
   persistHistory(history);
   renderHistory();
+  resetFields();
+  showToast('✅ تم حفظ العملية بنجاح');
+}
+
+function undoLastOperation(){
+  const history = loadHistory();
+  if(history.length === 0){ return; }
+  askConfirmation({ type: 'undo' }, 'أنت على وشك التراجع عن آخر عملية محفوظة في السجل (سيُعاد الرصيد المخصوم إن وجد).');
+}
+
+function performUndo(){
+  const history = loadHistory();
+  if(history.length === 0){ return; }
+  const last = history.pop();
+
+  if(last._undo){
+    let list = loadCustomers();
+    const idx = list.findIndex(c => c.id === last._undo.customerId);
+    if(idx > -1){
+      if(!list[idx].orders) list[idx].orders = {};
+      list[idx].orders[last.powderType] = {
+        total: last._undo.orderTotalBefore,
+        delivered: last._undo.orderDeliveredBefore
+      };
+      persistCustomers(list);
+      renderCustomerSelect(last._undo.customerId);
+    } else if(last._undo.customerFullyRemoved && last._undo.customerSnapshotBefore){
+      list.push(last._undo.customerSnapshotBefore);
+      persistCustomers(list);
+      renderCustomerSelect(last._undo.customerSnapshotBefore.id);
+    }
+  }
+
+  persistHistory(history);
+  renderHistory();
+  showToast('↩️ تم التراجع عن آخر عملية');
 }
 
 function clearHistory(){
@@ -778,6 +1094,27 @@ function setZoneLocked(zoneEl, locked){
   zoneEl.querySelectorAll('input, select, button').forEach(el => { el.disabled = locked; });
 }
 
+let bagsReconfirmed = true;
+const bagsReconfirmBannerEl = document.getElementById('bagsReconfirmBanner');
+const reconfirmBagsInputEl = document.getElementById('reconfirmBagsInput');
+
+function requireBagsReconfirmation(){
+  if(!(parseFloat(bagsPerPalletEl.value) > 0)) return; // لسا ما بدأنا أصلاً، ما داعي نطلب تأكيد
+  bagsReconfirmed = false;
+  reconfirmBagsInputEl.value = bagsPerPalletEl.value;
+  bagsReconfirmBannerEl.style.display = 'block';
+  applyLockChain();
+}
+
+function confirmBagsReconfirmation(){
+  const val = parseFloat(reconfirmBagsInputEl.value);
+  if(!(val > 0)){ reconfirmBagsInputEl.focus(); return; }
+  bagsPerPalletEl.value = val;
+  bagsReconfirmed = true;
+  bagsReconfirmBannerEl.style.display = 'none';
+  applyLockChain();
+}
+
 function applyLockChain(){
   const bagsOK = parseFloat(bagsPerPalletEl.value) > 0;
   setZoneLocked(bagWeightFieldEl, !bagsOK);
@@ -785,13 +1122,25 @@ function applyLockChain(){
 
   const weightOK = bagsOK && parseFloat(bagWeightEl.value) > 0;
   setZoneLocked(customerCardEl, !weightOK);
-  setZoneLocked(calcBodyEl, !weightOK);
+  const calcOK = weightOK && bagsReconfirmed;
+  setZoneLocked(calcBodyEl, !calcOK);
   lockHint2El.style.display = weightOK ? 'none' : 'block';
 }
 
 bagsPerPalletEl.addEventListener('input', applyLockChain);
 bagWeightEl.addEventListener('input', applyLockChain);
+customerSelectEl.addEventListener('change', requireBagsReconfirmation);
+powderTypeEl.addEventListener('change', requireBagsReconfirmation);
 applyLockChain();
+
+let toastTimer = null;
+function showToast(message){
+  const el = document.getElementById('toast');
+  el.textContent = message;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.classList.remove('show'); }, 2200);
+}
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
