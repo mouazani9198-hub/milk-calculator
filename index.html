@@ -903,7 +903,7 @@ async function exportHistory(){
   }
 
   const historyRows = [
-    ['التاريخ','العميل','نوع البودرة','عدد المنصات','الوزن بالطن','الأكياس المتبقية','عدد الأكياس في المنصة','وزن الكيس']
+    ['التاريخ','العميل','نوع البودرة','الكمية الإجمالية المسلّمة (طن)','عدد الأكياس في المنصة','وزن الكيس']
   ];
   list.forEach(item => {
     const dateStr = new Date(item.time).toLocaleString('fr-FR');
@@ -911,9 +911,7 @@ async function exportHistory(){
       dateStr,
       item.customerName || 'بدون عميل',
       item.powderType || '',
-      item.pallets,
       parseFloat(formatTons(item.tons)),
-      item.remainder,
       item.bagsPerPallet,
       item.bagWeight
     ]);
@@ -937,7 +935,7 @@ async function exportHistory(){
 
   const wb = XLSX.utils.book_new();
   const wsHistory = XLSX.utils.aoa_to_sheet(historyRows);
-  wsHistory['!cols'] = [{wch:18},{wch:20},{wch:12},{wch:12},{wch:12},{wch:14},{wch:16},{wch:12}];
+  wsHistory['!cols'] = [{wch:18},{wch:20},{wch:12},{wch:22},{wch:16},{wch:12}];
   const wsBalance = XLSX.utils.aoa_to_sheet(balanceRows);
   wsBalance['!cols'] = [{wch:20},{wch:12},{wch:16},{wch:14},{wch:16}];
   XLSX.utils.book_append_sheet(wb, wsHistory, 'السجل');
