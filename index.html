@@ -358,6 +358,18 @@
   </header>
 
   <div class="card">
+    <h2>🏬 المخزن</h2>
+    <div class="field">
+      <label>حدد المخزن الذي ستُخرج منه البضاعة</label>
+      <input type="text" id="warehouseSelect" list="warehouseSuggestions" placeholder="مثال: المخزن الرئيسي" style="font-size:16px;font-weight:700;">
+      <datalist id="warehouseSuggestions"></datalist>
+    </div>
+    <div id="warehouseLockHint" style="margin-top:10px;font-size:12px;color:var(--amber);">
+      🔒 حدد المخزن أولاً — لن يفتح التطبيق أي خطوة أخرى قبل ذلك
+    </div>
+  </div>
+
+  <div class="card" id="settingsCard">
     <h2>إعدادات المنصة</h2>
     <div class="settings-row">
       <div class="field">
@@ -374,7 +386,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="stockCard">
     <h2>📦 مخزون الملفات (Stock)</h2>
     <div style="display:flex;gap:8px;margin-bottom:12px;">
       <div style="flex:1;text-align:center;background:rgba(63,155,220,0.08);border:1px solid var(--glass-border);border-radius:10px;padding:10px 6px;">
@@ -411,59 +423,10 @@
     </div>
   </div>
 
-  <div class="card" id="customerCard">
-    <h2>العميل ورصيده (Solde)</h2>
-    <div class="settings-row">
-      <div class="field" style="flex:2">
-        <label>اختر عميل</label>
-        <select id="customerSelect" onchange="onCustomerChange()">
-          <option value="">— بدون عميل —</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="settings-row" style="margin-top:10px">
-      <div class="field">
-        <label>اسم العميل</label>
-        <input type="text" id="newCustomerName" placeholder="مثال: مخبزة النور">
-      </div>
-      <div class="field">
-        <label>نوع البودرة لهذه الطلبية</label>
-        <select id="newCustomerType">
-          <option value="0%">0% دسم</option>
-          <option value="26%">26% دسم</option>
-        </select>
-      </div>
-    </div>
-    <div class="settings-row" style="margin-top:10px">
-      <div class="field">
-        <label>الكمية المطلوبة لهذا النوع (طن)</label>
-        <input type="number" id="newCustomerTotal" step="0.001" inputmode="decimal" placeholder="0">
-      </div>
-    </div>
-    <div class="actions">
-      <button class="btn-primary" onclick="addCustomer()">إضافة / تحديث طلبية العميل</button>
-      <button class="btn-danger" onclick="deleteSelectedCustomer()">حذف العميل بالكامل</button>
-    </div>
-
-    <div id="customerOrdersList" style="margin-top:12px"></div>
-    <div id="customerWarning" style="display:none;margin-top:10px;background:var(--danger);color:#fff;padding:10px;border-radius:8px;font-size:13px;text-align:center;font-weight:600;"></div>
-  </div>
+  <div id="calcBody">
 
   <div class="card">
-    <h2>الحساب (اكتب في أي خانة)</h2>
-
-    <div id="bagsReconfirmBanner" style="display:none;margin-bottom:14px;background:rgba(224,169,56,0.14);border:1px solid var(--amber);border-radius:12px;padding:12px 14px;">
-      <div style="font-size:12.5px;color:var(--milk);margin-bottom:10px;line-height:1.6;">
-        🔒 تغيّر العميل أو نوع البودرة — أكّد عدد الأكياس في المنصة الحالية قبل إجراء عملية جديدة
-      </div>
-      <div style="display:flex;gap:8px;">
-        <input type="number" id="reconfirmBagsInput" min="1" style="flex:1;background:var(--navy-deep);border:1px solid rgba(255,255,255,0.15);color:var(--milk);border-radius:8px;padding:10px;font-size:15px;text-align:center;">
-        <button class="btn-primary" style="flex:0 0 auto;padding:10px 16px;" onclick="confirmBagsReconfirmation()">تأكيد ✅</button>
-      </div>
-    </div>
-
-    <div id="calcBody">
+    <h2>1️⃣ نوع البودرة والملف النشط</h2>
     <div style="margin-bottom:14px">
       <label style="display:block;font-size:11px;color:var(--text-soft);margin-bottom:6px;">نوع البودرة المسلّمة</label>
       <select id="powderType" class="powder-select">
@@ -493,6 +456,7 @@
           <div id="dossierInfoRemaining" style="font-weight:800;font-size:15px;color:var(--accent);direction:ltr;"></div>
         </div>
       </div>
+      <button class="btn-secondary" style="width:100%;margin-top:10px;" onclick="openLabSampleForm()">🧪 إخراج عينات للتحليل المخبري</button>
     </div>
 
     <div id="dossierBanner" style="display:none;margin-bottom:14px;background:rgba(224,169,56,0.14);border:1px solid var(--amber);border-radius:12px;padding:12px 14px;">
@@ -511,9 +475,72 @@
       </div>
     </div>
 
-    <div id="warehouseConfirmBanner" style="display:none;margin-bottom:14px;background:rgba(63,155,220,0.14);border:1px solid var(--accent);border-radius:12px;padding:12px 14px;">
+    <div id="warehouseConfirmBanner" style="display:none;background:rgba(63,155,220,0.14);border:1px solid var(--accent);border-radius:12px;padding:12px 14px;">
       <div id="warehouseConfirmText" style="font-size:13px;color:var(--milk);margin-bottom:10px;line-height:1.7;font-weight:600;"></div>
       <button class="btn-primary" style="width:100%;" onclick="confirmWarehouseAccess()">✅ تأكيد المخزن والمتابعة</button>
+    </div>
+  </div>
+
+  <div class="card" id="customerCard">
+    <h2>2️⃣ العميل ورصيده (Solde)</h2>
+    <div class="settings-row">
+      <div class="field" style="flex:2">
+        <label>اختر عميل</label>
+        <select id="customerSelect" onchange="onCustomerChange()">
+          <option value="">— بدون عميل —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-row" style="margin-top:10px">
+      <div class="field">
+        <label>اسم العميل</label>
+        <input type="text" id="newCustomerName" placeholder="مثال: مخبزة النور">
+      </div>
+      <div class="field">
+        <label>نوع البودرة لهذه الطلبية</label>
+        <select id="newCustomerType">
+          <option value="0%">0% دسم</option>
+          <option value="26%">26% دسم</option>
+        </select>
+      </div>
+    </div>
+    <div class="settings-row" style="margin-top:10px">
+      <div class="field">
+        <label>الكمية المطلوبة لهذا النوع (طن)</label>
+        <input type="number" id="newCustomerTotal" step="0.001" inputmode="decimal" placeholder="0">
+      </div>
+    </div>
+    <div class="settings-row" style="margin-top:10px">
+      <div class="field">
+        <label>رقم شهادة التخصيص</label>
+        <input type="text" id="newCustomerCertNumber" placeholder="مثال: 2026/014">
+      </div>
+      <div class="field">
+        <label>تاريخ إصدار الشهادة</label>
+        <input type="date" id="newCustomerCertDate">
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" onclick="addCustomer()">إضافة / تحديث طلبية العميل</button>
+      <button class="btn-danger" onclick="deleteSelectedCustomer()">حذف العميل بالكامل</button>
+    </div>
+
+    <div id="customerOrdersList" style="margin-top:12px"></div>
+    <div id="customerWarning" style="display:none;margin-top:10px;background:var(--danger);color:#fff;padding:10px;border-radius:8px;font-size:13px;text-align:center;font-weight:600;"></div>
+  </div>
+
+  <div class="card">
+    <h2>3️⃣ الحساب (اكتب في أي خانة)</h2>
+
+    <div id="bagsReconfirmBanner" style="display:none;margin-bottom:14px;background:rgba(224,169,56,0.14);border:1px solid var(--amber);border-radius:12px;padding:12px 14px;">
+      <div style="font-size:12.5px;color:var(--milk);margin-bottom:10px;line-height:1.6;">
+        🔒 تغيّر العميل أو نوع البودرة — أكّد عدد الأكياس في المنصة الحالية قبل إجراء عملية جديدة
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="number" id="reconfirmBagsInput" min="1" style="flex:1;background:var(--navy-deep);border:1px solid rgba(255,255,255,0.15);color:var(--milk);border-radius:8px;padding:10px;font-size:15px;text-align:center;">
+        <button class="btn-primary" style="flex:0 0 auto;padding:10px 16px;" onclick="confirmBagsReconfirmation()">تأكيد ✅</button>
+      </div>
     </div>
 
     <div id="calcQuantityZone">
@@ -549,9 +576,32 @@
       <button class="btn-secondary" onclick="resetFields()">تصفير</button>
     </div>
     </div>
-    </div>
     <div id="lockHint2" style="margin-top:10px;font-size:12px;color:var(--amber);display:none;">
       🔒 أكمل إعدادات المنصة أولاً (عدد الأكياس ووزن الكيس)
+    </div>
+  </div>
+
+  </div>
+
+  <div id="labSampleOverlay" style="position:fixed;inset:0;background:rgba(10,20,32,0.94);backdrop-filter:blur(3px);z-index:1050;display:none;align-items:center;justify-content:center;padding:20px;">
+    <div style="max-width:360px;width:100%;background:var(--navy);border-radius:18px;padding:20px;border:2px solid var(--accent);box-shadow:0 14px 34px rgba(0,0,0,0.55);">
+      <div style="font-size:15px;font-weight:800;margin-bottom:4px;">🧪 إخراج عينات للتحليل المخبري</div>
+      <div style="font-size:12px;color:var(--text-soft);margin-bottom:14px;line-height:1.6;">
+        يُخرج كيس كامل (25 كغ) لكل Lot لأخذ عينة تحليل، ثم يعود للمخزون بالوزن المتبقي بعد أخذ العينة.
+      </div>
+      <div class="field" style="margin-bottom:10px;">
+        <label>عدد اللوطات (Lots)</label>
+        <input type="number" id="labLotsCount" min="1" step="1" placeholder="مثال: 3" oninput="updateLabSampleSummary()">
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label>الوزن المأخوذ من كل كيس للتحليل (غرام)</label>
+        <input type="number" id="labSampleGrams" min="1" step="1" placeholder="مثال: 500" oninput="updateLabSampleSummary()">
+      </div>
+      <div id="labSampleSummary" style="font-size:12.5px;color:var(--text-soft);margin-bottom:14px;line-height:1.7;"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-secondary" style="flex:1;" onclick="closeLabSampleForm()">إلغاء</button>
+        <button class="btn-primary" style="flex:1;" onclick="confirmLabSample()">تأكيد الإخراج ✅</button>
+      </div>
     </div>
   </div>
 
@@ -571,6 +621,15 @@
           <option value="0%">0% دسم</option>
           <option value="26%">26% دسم</option>
         </select>
+      </div>
+    </div>
+    <div class="settings-row" style="margin-bottom:10px;">
+      <div class="field">
+        <label>تصفية حسب اليوم</label>
+        <input type="date" id="historyFilterDate" onchange="renderHistory()">
+      </div>
+      <div class="field" style="display:flex;align-items:flex-end;">
+        <button class="btn-secondary" style="width:100%;" onclick="document.getElementById('historyFilterDate').value='';renderHistory();">مسح فلتر التاريخ</button>
       </div>
     </div>
     <div id="historyList"></div>
@@ -771,6 +830,21 @@ const bagsPerPalletEl = document.getElementById('bagsPerPallet');
 const bagWeightEl = document.getElementById('bagWeight');
 const bagWeightFieldEl = document.getElementById('bagWeightField');
 const customerCardEl = document.getElementById('customerCard');
+const settingsCardEl = document.getElementById('settingsCard');
+const stockCardEl = document.getElementById('stockCard');
+const warehouseSelectEl = document.getElementById('warehouseSelect');
+const warehouseLockHintEl = document.getElementById('warehouseLockHint');
+
+function getSelectedWarehouse(){
+  return (warehouseSelectEl.value || '').trim();
+}
+function populateWarehouseSuggestions(){
+  const all = loadDossiers();
+  const names = new Set();
+  POWDER_TYPES.forEach(t => (all[t] || []).forEach(d => { if(d.warehouse) names.add(d.warehouse); }));
+  const list = document.getElementById('warehouseSuggestions');
+  list.innerHTML = [...names].map(n => `<option value="${n}"></option>`).join('');
+}
 const calcBodyEl = document.getElementById('calcBody');
 const lockHint1El = document.getElementById('lockHint1');
 const lockHint2El = document.getElementById('lockHint2');
@@ -832,7 +906,10 @@ function dossierRemaining(d){
 }
 function hasUsableDossier(type){
   const d = getActiveDossier(type);
-  return !!d && dossierRemaining(d) > 0.0001;
+  if(!d || dossierRemaining(d) <= 0.0001) return false;
+  const selectedWh = getSelectedWarehouse();
+  if(d.warehouse && selectedWh && d.warehouse !== selectedWh) return false;
+  return true;
 }
 function totalStockForType(type){
   return getDossierList(type)
@@ -924,6 +1001,7 @@ function addNewStockDossier(){
 }
 
 function renderDossierStockList(){
+  populateWarehouseSuggestions();
   document.getElementById('stockTotal0').textContent = formatTons(totalStockForType('0%'));
   document.getElementById('stockTotal26').textContent = formatTons(totalStockForType('26%'));
 
@@ -1043,11 +1121,91 @@ function applyDossierGate(){
       setZoneLocked(calcQuantityZoneEl, true);
     }
   } else {
-    document.getElementById('dossierBannerType').textContent = type;
+    const activeElsewhere = getActiveDossier(type);
+    const selectedWh = getSelectedWarehouse();
+    if(activeElsewhere && dossierRemaining(activeElsewhere) > 0.0001 && activeElsewhere.warehouse && activeElsewhere.warehouse !== selectedWh){
+      document.getElementById('dossierBannerType').textContent = `${type} (الملف النشط في مخزن "${activeElsewhere.warehouse}" وليس "${selectedWh}")`;
+    } else {
+      document.getElementById('dossierBannerType').textContent = type;
+    }
+    const whInput = document.getElementById('dossierWarehouseInput');
+    if(whInput && !whInput.value){ whInput.value = selectedWh; }
     dossierBannerEl.style.display = 'block';
     warehouseBanner.style.display = 'none';
     setZoneLocked(calcQuantityZoneEl, true);
   }
+}
+
+function openLabSampleForm(){
+  const type = powderTypeEl.value;
+  const d = getActiveDossier(type);
+  if(!d){ showToast('⚠️ لا يوجد ملف نشط لهذا النوع'); return; }
+  document.getElementById('labLotsCount').value = '';
+  document.getElementById('labSampleGrams').value = '';
+  document.getElementById('labSampleSummary').textContent = '';
+  document.getElementById('labSampleOverlay').style.display = 'flex';
+}
+function closeLabSampleForm(){
+  document.getElementById('labSampleOverlay').style.display = 'none';
+}
+function updateLabSampleSummary(){
+  const lots = parseInt(document.getElementById('labLotsCount').value) || 0;
+  const grams = parseFloat(document.getElementById('labSampleGrams').value) || 0;
+  const netTons = (lots * grams) / 1000000;
+  document.getElementById('labSampleSummary').textContent =
+    (lots > 0 && grams > 0)
+      ? `سيخرج ${lots} كيس (25 كغ لكل كيس)، وتؤخذ عينة ${grams} غرام من كل كيس، ثم تعود الأكياس للمخزون بوزن أقل.\nصافي النقص من رصيد الملف: ${roundTo3(netTons)} طن.`
+      : '';
+}
+function confirmLabSample(){
+  const lots = parseInt(document.getElementById('labLotsCount').value) || 0;
+  const grams = parseFloat(document.getElementById('labSampleGrams').value) || 0;
+  if(!(lots > 0)){ showToast('⚠️ أدخل عدد اللوطات'); return; }
+  if(!(grams > 0)){ showToast('⚠️ أدخل وزن العينة بالغرام'); return; }
+  const type = powderTypeEl.value;
+  const netTons = roundTo3((lots * grams) / 1000000);
+  const d = getActiveDossier(type);
+  if(!d){ showToast('⚠️ لا يوجد ملف نشط لهذا النوع'); return; }
+  if(netTons > dossierRemaining(d) + 0.0001){
+    showCenterAlert(`صافي وزن العينات (${formatTons(netTons)} طن) يتجاوز المتوفر في الملف الحالي (${formatTons(dossierRemaining(d))} طن).`);
+    return;
+  }
+  askConfirmation(
+    { type: 'labSample', data: { type, lots, grams, netTons, dossierId: d.id, dossierName: d.name } },
+    `أنت على وشك إخراج ${lots} كيس (25 كغ) للتحليل المخبري من الملف (${d.name}).\nصافي النقص من الرصيد: ${formatTons(netTons)} طن.\n\nهل تؤكد؟`
+  );
+}
+function performLabSample(data){
+  const allDossiers = loadDossiers();
+  const list = allDossiers[data.type] || [];
+  const d = list.find(x => x.id === data.dossierId);
+  if(!d){ showToast('⚠️ الملف لم يعد موجوداً'); closeLabSampleForm(); return; }
+
+  const dossierSnapshotBefore = JSON.parse(JSON.stringify(d));
+  d.delivered = Math.round((d.delivered + data.netTons) * 1000) / 1000;
+  let promoted = false;
+  if(d.initialQty - d.delivered <= 0.0001){ d.status = 'consumed'; promoted = true; }
+  persistDossiers(allDossiers);
+  if(promoted){ promoteNextDossier(data.type); }
+
+  const history = loadHistory();
+  history.push({
+    time: Date.now(),
+    bagsPerPallet: null, bagWeight: 25, pallets: 0, tons: data.netTons, remainder: 0,
+    customerName: null,
+    powderType: data.type,
+    dossierName: data.dossierName,
+    isLabSample: true,
+    labLots: data.lots, labGrams: data.grams,
+    _undo: null,
+    _dossierUndo: { type: data.type, dossierId: data.dossierId, dossierSnapshotBefore }
+  });
+  persistHistory(history);
+  renderHistory();
+  renderDossierStockList();
+  applyDossierGate();
+  closeLabSampleForm();
+  showToast('🧪 تم تسجيل إخراج العينات وتحديث المخزون');
 }
 
 function loadCustomers(){
@@ -1101,8 +1259,12 @@ function renderCustomerOrders(){
     const o = c.orders[t];
     const remaining = o.total - o.delivered;
     const typeClass = t === '26%' ? 'type-card-26' : 'type-card-0';
+    const certLine = o.certNumber
+      ? `<div style="font-size:11.5px;color:var(--text-soft);margin-bottom:10px;">📜 شهادة التخصيص: <b style="color:var(--milk)">${o.certNumber}</b>${o.certDate ? ' · تاريخ: ' + o.certDate : ''}</div>`
+      : '';
     return `<div class="order-card ${typeClass}">
       <div class="order-type-badge">${t} دسم</div>
+      ${certLine}
       <div class="order-stats">
         <div class="stat">
           <div class="stat-label">الكمية الكلية</div>
@@ -1128,9 +1290,13 @@ function addCustomer(){
   const nameEl = document.getElementById('newCustomerName');
   const totalEl = document.getElementById('newCustomerTotal');
   const typeEl = document.getElementById('newCustomerType');
+  const certNumberEl = document.getElementById('newCustomerCertNumber');
+  const certDateEl = document.getElementById('newCustomerCertDate');
   const name = nameEl.value.trim();
   const total = parseLocaleNumber(totalEl.value);
   const type = typeEl.value;
+  const certNumber = certNumberEl.value.trim();
+  const certDate = certDateEl.value;
   if(!name || total <= 0){ return; }
 
   let list = loadCustomers();
@@ -1143,10 +1309,14 @@ function addCustomer(){
     customer.orders[type] = {total: 0, delivered: 0};
   }
   customer.orders[type].total = Math.round((customer.orders[type].total + total) * 1000) / 1000;
+  if(certNumber){ customer.orders[type].certNumber = certNumber; }
+  if(certDate){ customer.orders[type].certDate = certDate; }
 
   persistCustomers(list);
   nameEl.value = '';
   totalEl.value = '';
+  certNumberEl.value = '';
+  certDateEl.value = '';
   renderCustomerSelect(customer.id);
 }
 function deleteSelectedCustomer(){
@@ -1293,10 +1463,16 @@ function getFilteredHistory(){
   const list = loadHistory();
   const customerFilter = document.getElementById('historyFilterCustomer').value;
   const typeFilter = document.getElementById('historyFilterType').value;
+  const dateFilter = document.getElementById('historyFilterDate').value;
   return list.filter(item => {
     if(customerFilter === '__none__' && item.customerName){ return false; }
     if(customerFilter && customerFilter !== '__none__' && item.customerName !== customerFilter){ return false; }
     if(typeFilter && item.powderType !== typeFilter){ return false; }
+    if(dateFilter){
+      const itemDate = new Date(item.time);
+      const itemDateStr = itemDate.getFullYear() + '-' + String(itemDate.getMonth()+1).padStart(2,'0') + '-' + String(itemDate.getDate()).padStart(2,'0');
+      if(itemDateStr !== dateFilter){ return false; }
+    }
     return true;
   });
 }
@@ -1321,10 +1497,21 @@ function renderHistory(){
   }
   container.innerHTML = list.slice().reverse().map(item => {
     const timeStr = new Date(item.time).toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const dossierPart = item.dossierName ? ` · BL: ${item.dossierName}` : '';
+    if(item.isLabSample){
+      const mainLine = `🧪 عينات مخبرية — ${formatTons(item.tons)} طن (صافي)`;
+      const subLine = `${item.powderType || ''} · ${item.labLots} لوط × ${item.labGrams} غ/كيس${dossierPart}`;
+      return `<div class="history-item">
+        <div>
+          <div class="h-main">${mainLine}</div>
+          <div class="h-sub">${subLine}</div>
+        </div>
+        <div class="h-time">${timeStr}</div>
+      </div>`;
+    }
     const mainLine = item.remainder > 0
       ? `${formatTons(item.tons)} طن ↔ ${item.pallets} منصة + ${item.remainder} كيس`
       : `${item.pallets} منصة ↔ ${formatTons(item.tons)} طن`;
-    const dossierPart = item.dossierName ? ` · BL: ${item.dossierName}` : '';
     const subLine = item.customerName
       ? `${item.customerName} · ${item.powderType || ''} · ${item.bagsPerPallet} كيس/منصة × ${item.bagWeight} كغ${dossierPart}`
       : `${item.powderType || ''} · ${item.bagsPerPallet} كيس/منصة × ${item.bagWeight} كغ${dossierPart}`;
@@ -1498,6 +1685,7 @@ function checkConfirmPin(){
     else if(action && action.type === 'deleteCustomer'){ performDeleteCustomer(action.data.id); }
     else if(action && action.type === 'clearHistory'){ performClearHistory(); }
     else if(action && action.type === 'deleteDossier'){ performDeleteDossier(action.data.type, action.data.id); }
+    else if(action && action.type === 'labSample'){ performLabSample(action.data); }
   } else {
     confirmPinErrorEl.textContent = 'رمز غير صحيح، حاول مرة أخرى';
     confirmPinBuffer = '';
@@ -1787,12 +1975,18 @@ function confirmBagsReconfirmation(){
 }
 
 function applyLockChain(){
+  const warehouseOK = getSelectedWarehouse().length > 0;
+  setZoneLocked(settingsCardEl, !warehouseOK);
+  setZoneLocked(stockCardEl, !warehouseOK);
+  setZoneLocked(calcBodyEl, !warehouseOK);
+  warehouseLockHintEl.style.display = warehouseOK ? 'none' : 'block';
+  if(!warehouseOK){ return; }
+
   const bagsOK = parseFloat(bagsPerPalletEl.value) > 0;
   setZoneLocked(bagWeightFieldEl, !bagsOK);
   lockHint1El.style.display = bagsOK ? 'none' : 'block';
 
   const weightOK = bagsOK && parseFloat(bagWeightEl.value) > 0;
-  setZoneLocked(customerCardEl, !weightOK);
   const calcOK = weightOK && bagsReconfirmed;
   setZoneLocked(calcBodyEl, !calcOK);
   lockHint2El.style.display = weightOK ? 'none' : 'block';
@@ -1800,6 +1994,8 @@ function applyLockChain(){
 }
 
 bagsPerPalletEl.addEventListener('input', applyLockChain);
+warehouseSelectEl.addEventListener('input', applyLockChain);
+warehouseSelectEl.addEventListener('change', applyDossierGate);
 bagWeightEl.addEventListener('input', applyLockChain);
 customerSelectEl.addEventListener('change', requireBagsReconfirmation);
 powderTypeEl.addEventListener('change', requireBagsReconfirmation);
