@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -1159,7 +1158,7 @@ function applyDossierGate(){
     dossierBannerEl.style.display = 'none';
     if(confirmedWarehouseDossierId === d.id){
       warehouseBanner.style.display = 'none';
-      setZoneLocked(calcQuantityZoneEl, false);
+      setZoneLocked(calcQuantityZoneEl, !bagsReconfirmed);
     } else {
       document.getElementById('warehouseConfirmText').textContent =
         `🏬 أنت على وشك إخراج بضاعة من مخزن: ${d.warehouse || 'غير محدد'}\nالملف: ${d.name} — تأكد أنك في المخزن الصحيح قبل المتابعة`;
@@ -2039,7 +2038,7 @@ function requireBagsReconfirmation(){
   bagsReconfirmed = false;
   reconfirmBagsInputEl.value = bagsPerPalletEl.value;
   bagsReconfirmBannerEl.style.display = 'block';
-  applyLockChain();
+  applyDossierGate();
 }
 
 function confirmBagsReconfirmation(){
@@ -2048,7 +2047,7 @@ function confirmBagsReconfirmation(){
   bagsPerPalletEl.value = val;
   bagsReconfirmed = true;
   bagsReconfirmBannerEl.style.display = 'none';
-  applyLockChain();
+  applyDossierGate();
 }
 
 function applyLockChain(){
@@ -2064,10 +2063,9 @@ function applyLockChain(){
   lockHint1El.style.display = bagsOK ? 'none' : 'block';
 
   const weightOK = bagsOK && parseFloat(bagWeightEl.value) > 0;
-  const calcOK = weightOK && bagsReconfirmed;
-  setZoneLocked(calcBodyEl, !calcOK);
+  setZoneLocked(calcBodyEl, !weightOK);
   lockHint2El.style.display = weightOK ? 'none' : 'block';
-  if(calcOK){ applyDossierGate(); }
+  if(weightOK){ applyDossierGate(); }
 }
 
 bagsPerPalletEl.addEventListener('input', applyLockChain);
