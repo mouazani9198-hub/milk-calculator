@@ -1,8 +1,12 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "io.github.mouazani9198_hub.twa",
-        "sha256_cert_fingerprints": ["89:06:C6:3C:13:CC:62:08:48:05:D8:0D:E2:9F:8A:55:B9:BE:C7:6C:BD:2C:11:24:B0:F1:EB:33:20:A4:9A:92"]
-      }
-    }]
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.mouazani9198_hub.twa",
+      "sha256_cert_fingerprints": [
+        "A4:B1:37:51:E2:12:EA:61:0C:FB:C1:D2:C7:AE:9C:09:88:42:6F:3E:08:95:8D:09:CE:AA:AA:8D:1C:4F:D1:85"
+      ]
+    }
+  }
+]
