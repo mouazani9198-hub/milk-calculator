@@ -177,6 +177,33 @@
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   body.theme-26 #toast{background:var(--amber);color:#2a1c02;}
 
+  #historyTableWrap{ display:none; }
+  #historyTable{
+    width:100%;border-collapse:collapse;font-size:12px;
+    background:rgba(255,255,255,0.03);border-radius:10px;overflow:hidden;
+  }
+  #historyTable th, #historyTable td{
+    border:1px solid var(--glass-border);padding:8px 6px;text-align:center;
+  }
+  #historyTable thead th{
+    background:var(--accent-dim);color:#fff;font-weight:800;font-size:11.5px;
+    position:sticky;top:0;
+  }
+  #historyTable tbody tr:nth-child(even){ background:rgba(255,255,255,0.03); }
+  #historyTable tbody tr.lab-row{ background:rgba(219,165,62,0.12); }
+
+  @media (orientation: landscape){
+    .wrap{ max-width:96vw; }
+    #historyList{ display:none; }
+    #historyTableWrap{ display:block; overflow-x:auto; }
+    .card{ padding:14px 18px; }
+    body{ font-size:15px; }
+  }
+  @media (orientation: landscape) and (max-height: 500px){
+    header p{ display:none; }
+    .type-watermark{ opacity:0.5; }
+  }
+
   .locked-zone{
     opacity:0.32;filter:grayscale(55%);pointer-events:none;
     transition:opacity 0.25s ease, filter 0.25s ease;
@@ -633,6 +660,24 @@
       </div>
     </div>
     <div id="historyList"></div>
+    <div id="historyTableWrap">
+      <table id="historyTable">
+        <thead>
+          <tr>
+            <th>رقم</th>
+            <th>التاريخ</th>
+            <th>المستفيد (العميل)</th>
+            <th>نوع البودرة</th>
+            <th>الأكياس المسلّمة</th>
+            <th>الكمية الموزعة (طن)</th>
+            <th>رقم الملف / BL</th>
+            <th>شهادة التخصيص</th>
+            <th>ملاحظة</th>
+          </tr>
+        </thead>
+        <tbody id="historyTableBody"></tbody>
+      </table>
+    </div>
     <div class="actions">
       <button class="btn-secondary" onclick="undoLastOperation()">↩️ تراجع عن آخر عملية</button>
       <button class="btn-secondary" onclick="exportHistory()">📤 تصدير السجل (Excel)</button>
@@ -1522,6 +1567,37 @@ function renderHistory(){
       </div>
       <div class="h-time">${timeStr}</div>
     </div>`;
+  }).join('');
+  renderHistoryTable(list);
+}
+
+function renderHistoryTable(list){
+  const tbody = document.getElementById('historyTableBody');
+  if(!list || list.length === 0){
+    tbody.innerHTML = '<tr><td colspan="9">لا توجد عمليات مطابقة</td></tr>';
+    return;
+  }
+  const customers = loadCustomers();
+  tbody.innerHTML = list.slice().reverse().map((item, idx) => {
+    const dateStr = new Date(item.time).toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const rowClass = item.isLabSample ? 'lab-row' : '';
+    const beneficiary = item.isLabSample ? '🧪 تحليل مخبري' : (item.customerName || 'بدون عميل');
+    const bagsCol = item.isLabSample ? `${item.labLots} لوط` : (item.remainder || 0);
+    const cust = item.customerName ? customers.find(c => c.name === item.customerName) : null;
+    const order = cust && cust.orders ? cust.orders[item.powderType] : null;
+    const cert = order && order.certNumber ? order.certNumber : '—';
+    const note = item.isLabSample ? `${item.labGrams} غ/كيس` : '';
+    return `<tr class="${rowClass}">
+      <td>${list.length - idx}</td>
+      <td>${dateStr}</td>
+      <td>${beneficiary}</td>
+      <td>${item.powderType || ''}</td>
+      <td>${bagsCol}</td>
+      <td>${formatTons(item.tons)}</td>
+      <td>${item.dossierName || '—'}</td>
+      <td>${cert}</td>
+      <td>${note}</td>
+    </tr>`;
   }).join('');
 }
 
