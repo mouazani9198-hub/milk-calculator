@@ -1153,18 +1153,10 @@ function applyDossierGate(){
   const usable = hasUsableDossier(type);
   renderDossierInfo();
   const warehouseBanner = document.getElementById('warehouseConfirmBanner');
+  warehouseBanner.style.display = 'none';
   if(usable){
-    const d = getActiveDossier(type);
     dossierBannerEl.style.display = 'none';
-    if(confirmedWarehouseDossierId === d.id){
-      warehouseBanner.style.display = 'none';
-      setZoneLocked(calcQuantityZoneEl, !bagsReconfirmed);
-    } else {
-      document.getElementById('warehouseConfirmText').textContent =
-        `🏬 أنت على وشك إخراج بضاعة من مخزن: ${d.warehouse || 'غير محدد'}\nالملف: ${d.name} — تأكد أنك في المخزن الصحيح قبل المتابعة`;
-      warehouseBanner.style.display = 'block';
-      setZoneLocked(calcQuantityZoneEl, true);
-    }
+    setZoneLocked(calcQuantityZoneEl, !bagsReconfirmed);
   } else {
     const activeElsewhere = getActiveDossier(type);
     const selectedWh = getSelectedWarehouse();
@@ -1176,7 +1168,6 @@ function applyDossierGate(){
     const whInput = document.getElementById('dossierWarehouseInput');
     if(whInput && !whInput.value){ whInput.value = selectedWh; }
     dossierBannerEl.style.display = 'block';
-    warehouseBanner.style.display = 'none';
     setZoneLocked(calcQuantityZoneEl, true);
   }
 }
