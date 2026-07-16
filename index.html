@@ -96,20 +96,20 @@
     transition:background-image 0.4s ease;
   }
   body.theme-26{
-    --accent:#dba53e;
-    --accent-dim:#8a6423;
-    --navy:#2e2412;
-    --navy-deep:#1c1608;
-    --steel:#5a4726;
-    --glass-tint: rgba(219,165,62,0.11);
-    --glass-border: rgba(230,190,110,0.24);
-    background-image:radial-gradient(circle at 50% -10%, #5a4726 0%, #1c1608 65%);
+    --accent:#f7c60c;
+    --accent-dim:#c9a005;
+    --navy:#332c0a;
+    --navy-deep:#1f1a06;
+    --steel:#5c4f16;
+    --glass-tint: rgba(247,198,12,0.13);
+    --glass-border: rgba(247,198,12,0.35);
+    background-image:radial-gradient(circle at 50% -10%, #5c4f16 0%, #1f1a06 65%);
   }
   body.theme-26 .screen:not(.readonly) .screen-value{
-    color:#f4c667;
-    text-shadow:0 0 10px rgba(244,198,103,0.4);
+    color:#f7c60c;
+    text-shadow:0 0 10px rgba(247,198,12,0.45);
   }
-  body.theme-26 .screen:not(.readonly) .screen-value input{color:#f4c667;}
+  body.theme-26 .screen:not(.readonly) .screen-value input{color:#f7c60c;}
   .type-watermark{
     position:fixed;inset:0;
     pointer-events:none;z-index:0;overflow:hidden;user-select:none;
@@ -118,6 +118,20 @@
     transition:background-image 0.4s ease;
   }
   .wrap{max-width:460px;margin:0 auto;position:relative;z-index:1;}
+  .onil-logo{ display:flex; justify-content:center; margin-bottom:10px; }
+  .onil-logo-ring{
+    width:64px;height:64px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, rgba(255,255,255,0.25), transparent 60%), var(--navy);
+    border:3px solid var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 3px rgba(255,255,255,0.06), 0 6px 16px rgba(0,0,0,0.4), 0 0 14px var(--accent);
+    transition:border-color 0.4s ease, box-shadow 0.4s ease;
+  }
+  .onil-logo-text{
+    font-size:13px;font-weight:900;letter-spacing:1px;color:var(--accent);
+    transition:color 0.4s ease;
+  }
+
   header{text-align:center;padding:6px 0 18px;}
   header .badge{
     display:inline-block;background:var(--accent-dim);color:var(--milk);
@@ -369,6 +383,11 @@
 <div id="typeWatermark" class="type-watermark"></div>
 <div class="wrap">
   <header>
+    <div id="onilLogo" class="onil-logo">
+      <div class="onil-logo-ring">
+        <span class="onil-logo-text">ONIL</span>
+      </div>
+    </div>
     <div class="badge">أداة تحويل الوزن</div>
     <h1>حاسبة المنصات والطن</h1>
     <p>تحويل بين عدد المنصات والوزن بالطن حسب تركيبة كل شحنة</p>
@@ -385,12 +404,44 @@
   </header>
 
   <div class="card">
+    <h2>💾 نسخة احتياطية كاملة (حماية دائمة)</h2>
+    <div style="font-size:12px;color:var(--text-soft);margin-bottom:10px;line-height:1.7;">
+      مسح بيانات كروم يمسح كل شي محفوظ بالتطبيق. الحل الوحيد المضمون: تصدير نسخة احتياطية كملف حقيقي (تحفظه بجوجل درايف أو ذاكرة الجهاز) خارج تخزين المتصفح تماماً — تقدر تسترجعها في أي وقت حتى بعد سنوات.
+    </div>
+    <div id="lastBackupInfo" style="font-size:11px;color:var(--amber);margin-bottom:10px;"></div>
+    <div class="actions">
+      <button class="btn-primary" onclick="exportFullBackup()">💾 تصدير نسخة احتياطية الآن</button>
+    </div>
+    <div style="margin-top:10px;">
+      <label style="display:block;font-size:11px;color:var(--text-soft);margin-bottom:6px;">استعادة من نسخة احتياطية سابقة (.json)</label>
+      <input type="file" id="restoreBackupInput" accept=".json" onchange="restoreFullBackup(event)" style="width:100%;background:var(--navy-deep);border:1px solid rgba(255,255,255,0.15);color:var(--milk);border-radius:8px;padding:10px;font-size:12px;">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📥 استيراد وتوحيد بيانات المخازن</h2>
+    <div style="font-size:12px;color:var(--text-soft);margin-bottom:10px;line-height:1.7;">
+      لمسيرة المخازن: ارفع ملفات Excel المُصدَّرة من كل مخزن هنا، وسيقوم التطبيق تلقائياً بإدراج الملفات وأرصدة العملاء والسجل في الخانات المناسبة، ودمجها مع البيانات الحالية.
+    </div>
+    <input type="file" id="importExcelInput" accept=".xlsx" onchange="importExcelFile(event)" style="width:100%;background:var(--navy-deep);border:1px solid rgba(255,255,255,0.15);color:var(--milk);border-radius:8px;padding:10px;font-size:12px;">
+  </div>
+
+  <div class="card">
     <h2>🏬 المخزن</h2>
     <div class="field">
       <label>حدد المخزن الذي ستُخرج منه البضاعة</label>
       <input type="text" id="warehouseSelect" list="warehouseSuggestions" placeholder="مثال: المخزن الرئيسي" style="font-size:16px;font-weight:700;">
       <datalist id="warehouseSuggestions"></datalist>
     </div>
+    <button class="btn-secondary" style="width:100%;margin-top:10px;" onclick="toggleWarehouseManage()">➕ إضافة / إدارة قائمة المخازن <span id="warehouseManageArrow">▾</span></button>
+    <div id="warehouseManagePanel" style="display:none;margin-top:10px;">
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="newWarehouseNameInput" placeholder="اسم مخزن جديد" style="flex:1;background:var(--navy-deep);border:1px solid rgba(255,255,255,0.15);color:var(--milk);border-radius:8px;padding:10px;">
+        <button class="btn-primary" style="flex:0 0 auto;padding:10px 16px;" onclick="addWarehouseToList()">إضافة</button>
+      </div>
+      <div id="warehouseListDisplay" style="font-size:12px;color:var(--text-soft);"></div>
+    </div>
+    <button class="btn-secondary" style="width:100%;margin-top:10px;" onclick="renameCurrentWarehouse()">✏️ تعديل / إعادة تسمية اسم هذا المخزن في كل الملفات</button>
     <div id="warehouseLockHint" style="margin-top:10px;font-size:12px;color:var(--amber);">
       🔒 حدد المخزن أولاً — لن يفتح التطبيق أي خطوة أخرى قبل ذلك
     </div>
@@ -880,6 +931,273 @@ const stockCardEl = document.getElementById('stockCard');
 const warehouseSelectEl = document.getElementById('warehouseSelect');
 const warehouseLockHintEl = document.getElementById('warehouseLockHint');
 
+async function importExcelFile(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  showToast('⏳ جاري قراءة الملف...');
+  try{ await loadXLSXLibrary(); }catch(e){ showToast('⚠️ يلزم اتصال إنترنت لأول مرة للاستيراد'); event.target.value=''; return; }
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      let importedDossiers = 0, importedCustomers = 0, importedHistory = 0;
+
+      const dossierSheetName = wb.SheetNames.find(n => n.indexOf('مخزون الملفات') > -1);
+      if(dossierSheetName){
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[dossierSheetName], {header:1});
+        const statusMap = {'نشط الآن':'active','بالانتظار':'pending','منتهٍ':'consumed'};
+        const allDossiers = loadDossiers();
+        for(let i=1;i<rows.length;i++){
+          const r = rows[i];
+          if(!r || !r[0] || !r[1]) continue;
+          const type = r[0];
+          if(POWDER_TYPES.indexOf(type) === -1) continue;
+          const name = String(r[1]);
+          const statusLabel = r[2];
+          const warehouse = r[3] || '';
+          const bagsPerPallet = r[4] || null;
+          const expiry = r[5] || '';
+          const total = parseFloat(r[6]) || 0;
+          const delivered = parseFloat(r[7]) || 0;
+          if(!allDossiers[type]) allDossiers[type] = [];
+          let existing = allDossiers[type].find(d => d.name === name);
+          if(existing){
+            existing.warehouse = warehouse;
+            existing.bagsPerPallet = bagsPerPallet;
+            existing.expiry = expiry;
+            existing.initialQty = total;
+            existing.delivered = delivered;
+            if(statusMap[statusLabel]){ existing.status = statusMap[statusLabel]; }
+          } else {
+            allDossiers[type].push({
+              id: genDossierId(), name, expiry, warehouse, bagsPerPallet,
+              initialQty: total, delivered, status: statusMap[statusLabel] || 'pending'
+            });
+          }
+          importedDossiers++;
+        }
+        POWDER_TYPES.forEach(t => {
+          const actives = (allDossiers[t] || []).filter(d => d.status === 'active');
+          if(actives.length > 1){ actives.slice(1).forEach(d => { d.status = 'pending'; }); }
+        });
+        persistDossiers(allDossiers);
+      }
+
+      const balanceSheetName = wb.SheetNames.find(n => n.indexOf('أرصدة العملاء') > -1);
+      if(balanceSheetName){
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[balanceSheetName], {header:1});
+        let customers = loadCustomers();
+        for(let i=1;i<rows.length;i++){
+          const r = rows[i];
+          if(!r || !r[0] || !r[1]) continue;
+          const name = String(r[0]);
+          const type = r[1];
+          if(POWDER_TYPES.indexOf(type) === -1) continue;
+          const certNumber = r[2] || '';
+          const certDate = r[3] || '';
+          const total = parseFloat(r[4]) || 0;
+          const delivered = parseFloat(r[5]) || 0;
+          let customer = customers.find(c => c.name.trim().toLowerCase() === name.trim().toLowerCase());
+          if(!customer){
+            customer = {id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), name, orders:{}};
+            customers.push(customer);
+          }
+          if(!customer.orders){ customer.orders = {}; }
+          customer.orders[type] = { total, delivered };
+          if(certNumber){ customer.orders[type].certNumber = certNumber; }
+          if(certDate){ customer.orders[type].certDate = certDate; }
+          importedCustomers++;
+        }
+        persistCustomers(customers);
+      }
+
+      const historySheetName = wb.SheetNames.find(n => n.indexOf('السجل') > -1);
+      if(historySheetName){
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[historySheetName], {header:1});
+        let history = loadHistory();
+        const existingKeys = new Set(history.map(h => `${h.time}|${h.customerName}|${h.powderType}|${h.tons}`));
+        for(let i=1;i<rows.length;i++){
+          const r = rows[i];
+          if(!r || r.length < 5 || !r[0]) continue;
+          const dateStr = String(r[0]);
+          const customerName = (r[1] === 'بدون عميل' || !r[1]) ? null : r[1];
+          const type = r[2];
+          const dossierName = r[3] || null;
+          const tons = parseFloat(r[4]) || 0;
+          const bagsPerPallet = r[5] || null;
+          const bagWeight = r[6] || null;
+          const parsedTime = Date.parse(dateStr);
+          const time = isNaN(parsedTime) ? Date.now() : parsedTime;
+          const key = `${dateStr}|${customerName}|${type}|${tons}`;
+          if(existingKeys.has(key)) continue;
+          history.push({
+            time, bagsPerPallet, bagWeight, pallets: 0, tons, remainder: 0,
+            customerName, powderType: type, dossierName,
+            _undo: null, _dossierUndo: null, imported: true
+          });
+          existingKeys.add(key);
+          importedHistory++;
+        }
+        persistHistory(history);
+      }
+
+      renderCustomerSelect('');
+      renderHistory();
+      renderDossierStockList();
+      populateWarehouseSuggestions();
+      showCenterAlert(`تم الاستيراد والدمج بنجاح ✅\n\nالملفات المستوردة: ${importedDossiers}\nالعملاء المستوردون: ${importedCustomers}\nعمليات سجل جديدة: ${importedHistory}`);
+    }catch(err){
+      showToast('⚠️ تعذّرت قراءة الملف — تأكد أنه بنفس تنسيق تصدير هذا التطبيق');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  event.target.value = '';
+}
+
+const BACKUP_KEYS = {
+  pin: 'milk_calc_pin_v1',
+  history: 'milk_calc_history_v1',
+  customers: 'milk_calc_customers_v1',
+  dossiers: 'milk_calc_dossiers_v1',
+  warehouses: 'milk_calc_warehouses_v1'
+};
+const LAST_BACKUP_KEY = 'milk_calc_last_backup_v1';
+
+function exportFullBackup(){
+  const payload = { exportedAt: new Date().toISOString(), data: {} };
+  Object.entries(BACKUP_KEYS).forEach(([label, key]) => {
+    payload.data[label] = localStorage.getItem(key);
+  });
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `نسخة_احتياطية_حاسبة_الحليب_${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  localStorage.setItem(LAST_BACKUP_KEY, Date.now().toString());
+  updateLastBackupInfo();
+  showToast('💾 تم تصدير النسخة الاحتياطية — احفظها بجوجل درايف أو ذاكرة الجهاز');
+}
+
+function restoreFullBackup(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const payload = JSON.parse(e.target.result);
+      if(!payload || !payload.data){ throw new Error('invalid'); }
+      askConfirmation(
+        { type: 'restoreBackup', data: payload.data },
+        `أنت على وشك استعادة نسخة احتياطية بتاريخ ${payload.exportedAt ? new Date(payload.exportedAt).toLocaleString('fr-FR') : 'غير معروف'}.\n\nسيتم استبدال كل البيانات الحالية (العملاء، الملفات، السجل، المخازن) بمحتوى هذه النسخة.\n\nهل تؤكد؟`
+      );
+    }catch(err){
+      showToast('⚠️ ملف النسخة الاحتياطية غير صالح');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function performRestoreBackup(data){
+  Object.entries(BACKUP_KEYS).forEach(([label, key]) => {
+    if(data[label] !== undefined && data[label] !== null){
+      localStorage.setItem(key, data[label]);
+    }
+  });
+  showToast('✅ تمت استعادة النسخة الاحتياطية — سيُعاد تحميل التطبيق');
+  setTimeout(() => location.reload(), 1200);
+}
+
+function updateLastBackupInfo(){
+  const el = document.getElementById('lastBackupInfo');
+  const last = localStorage.getItem(LAST_BACKUP_KEY);
+  if(!last){
+    el.textContent = '⚠️ ما سويت أي نسخة احتياطية بعد — يُنصح بعملها الآن';
+    return;
+  }
+  const days = Math.floor((Date.now() - parseInt(last)) / (1000*60*60*24));
+  if(days === 0){ el.textContent = '✅ آخر نسخة احتياطية: اليوم'; }
+  else if(days <= 7){ el.textContent = `✅ آخر نسخة احتياطية: قبل ${days} يوم`; }
+  else { el.textContent = `⚠️ آخر نسخة احتياطية كانت قبل ${days} يوم — يُنصح بعمل نسخة جديدة`; }
+}
+
+const WAREHOUSES_KEY = 'milk_calc_warehouses_v1';
+function loadWarehousesList(){
+  try{
+    const raw = localStorage.getItem(WAREHOUSES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function persistWarehousesList(list){
+  try{ localStorage.setItem(WAREHOUSES_KEY, JSON.stringify(list)); }catch(e){}
+}
+function addWarehouseToList(){
+  const input = document.getElementById('newWarehouseNameInput');
+  const name = input.value.trim();
+  if(!name){ showToast('⚠️ اكتب اسم المخزن'); return; }
+  const list = loadWarehousesList();
+  if(!list.includes(name)){ list.push(name); persistWarehousesList(list); }
+  input.value = '';
+  populateWarehouseSuggestions();
+  renderWarehouseListDisplay();
+  showToast('✅ تمت إضافة المخزن للقائمة');
+}
+function removeWarehouseFromList(name){
+  let list = loadWarehousesList();
+  list = list.filter(n => n !== name);
+  persistWarehousesList(list);
+  renderWarehouseListDisplay();
+  populateWarehouseSuggestions();
+}
+function renderWarehouseListDisplay(){
+  const list = loadWarehousesList();
+  const el = document.getElementById('warehouseListDisplay');
+  if(list.length === 0){ el.innerHTML = 'لا توجد مخازن مضافة يدوياً بعد (تقدر تكتب أي اسم مباشرة بالحقل فوق).'; return; }
+  el.innerHTML = list.map(n => `
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 10px;margin-bottom:6px;">
+      <span>🏬 ${n}</span>
+      <button class="btn-danger" style="padding:4px 10px;font-size:11px;" onclick="removeWarehouseFromList('${n}')">حذف</button>
+    </div>`).join('');
+}
+function toggleWarehouseManage(){
+  const panel = document.getElementById('warehouseManagePanel');
+  const arrow = document.getElementById('warehouseManageArrow');
+  const show = panel.style.display === 'none';
+  panel.style.display = show ? 'block' : 'none';
+  arrow.textContent = show ? '▲' : '▾';
+  if(show){ renderWarehouseListDisplay(); }
+}
+
+function renameCurrentWarehouse(){
+  const oldName = getSelectedWarehouse();
+  if(!oldName){ showToast('⚠️ اكتب اسم المخزن أولاً'); return; }
+  const newName = prompt(`تعديل اسم المخزن "${oldName}" — سيتم تحديثه في كل الملفات المرتبطة به.\n\nاكتب الاسم الجديد:`, oldName);
+  if(!newName || !newName.trim() || newName.trim() === oldName){ return; }
+  const finalName = newName.trim();
+
+  const all = loadDossiers();
+  let count = 0;
+  POWDER_TYPES.forEach(t => {
+    (all[t] || []).forEach(d => {
+      if(d.warehouse === oldName){ d.warehouse = finalName; count++; }
+    });
+  });
+  persistDossiers(all);
+
+  warehouseSelectEl.value = finalName;
+  renderDossierStockList();
+  applyLockChain();
+  showToast(`✅ تم تحديث اسم المخزن في ${count} ملف`);
+}
+
 function getSelectedWarehouse(){
   return (warehouseSelectEl.value || '').trim();
 }
@@ -887,6 +1205,7 @@ function populateWarehouseSuggestions(){
   const all = loadDossiers();
   const names = new Set();
   POWDER_TYPES.forEach(t => (all[t] || []).forEach(d => { if(d.warehouse) names.add(d.warehouse); }));
+  loadWarehousesList().forEach(n => names.add(n));
   const list = document.getElementById('warehouseSuggestions');
   list.innerHTML = [...names].map(n => `<option value="${n}"></option>`).join('');
 }
@@ -996,16 +1315,35 @@ function activateDossierManually(type, id){
   const list = all[type] || [];
   const active = list.find(d => d.status === 'active' && dossierRemaining(d) > 0.0001);
   if(active){
-    showToast('⚠️ يوجد ملف نشط حالياً لهذا النوع، يجب انتهاؤه أولاً');
+    const target = list.find(d => d.id === id);
+    const targetName = target ? target.name : '';
+    askConfirmation(
+      { type: 'forceSwitchDossier', data: { type, id } },
+      `يوجد ملف نشط حالياً (${active.name}) ولم ينتهِ بعد.\n\nأنت على وشك تبديله يدوياً وإخراج البضاعة من ملف آخر (${targetName}) قبل انتهاء الملف الحالي.\n\nهل تؤكد الاستمرار؟`
+    );
     return;
   }
-  const target = list.find(d => d.id === id);
-  if(!target) return;
-  target.status = 'active';
+  const targetDossier = list.find(d => d.id === id);
+  if(!targetDossier) return;
+  targetDossier.status = 'active';
   persistDossiers(all);
   renderDossierStockList();
   applyDossierGate();
   showToast('✅ تم تفعيل الملف المختار');
+}
+function performForceSwitchDossier(data){
+  const all = loadDossiers();
+  const list = all[data.type] || [];
+  const target = list.find(d => d.id === data.id);
+  if(!target){ return; }
+  list.forEach(d => {
+    if(d.id !== target.id && d.status === 'active'){ d.status = 'pending'; }
+  });
+  target.status = 'active';
+  persistDossiers(all);
+  renderDossierStockList();
+  applyDossierGate();
+  showToast('✅ تم التبديل القسري — الملف الجديد نشط الآن، والملف السابق أصبح بالانتظار');
 }
 
 function deleteDossier(type, id){
@@ -1534,6 +1872,7 @@ function renderHistory(){
   container.innerHTML = list.slice().reverse().map(item => {
     const timeStr = new Date(item.time).toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     const dossierPart = item.dossierName ? ` · BL: ${item.dossierName}` : '';
+    const importedPart = item.imported ? ' · 📥 مستورد' : '';
     if(item.isLabSample){
       const mainLine = `🧪 عينات مخبرية — ${formatTons(item.tons)} طن (صافي)`;
       const subLine = `${item.powderType || ''} · ${item.labLots} لوط × ${item.labGrams} غ/كيس${dossierPart}`;
@@ -1549,8 +1888,8 @@ function renderHistory(){
       ? `${formatTons(item.tons)} طن ↔ ${item.pallets} منصة + ${item.remainder} كيس`
       : `${item.pallets} منصة ↔ ${formatTons(item.tons)} طن`;
     const subLine = item.customerName
-      ? `${item.customerName} · ${item.powderType || ''} · ${item.bagsPerPallet} كيس/منصة × ${item.bagWeight} كغ${dossierPart}`
-      : `${item.powderType || ''} · ${item.bagsPerPallet} كيس/منصة × ${item.bagWeight} كغ${dossierPart}`;
+      ? `${item.customerName} · ${item.powderType || ''} · ${item.bagsPerPallet} كيس/منصة × ${item.bagWeight} كغ${dossierPart}${importedPart}`
+      : `${item.powderType || ''} · ${item.bagsPerPallet} كيس/منصة × ${item.bagWeight} كغ${dossierPart}${importedPart}`;
     return `<div class="history-item">
       <div>
         <div class="h-main">${mainLine}</div>
@@ -1642,7 +1981,7 @@ async function exportHistory(){
   });
 
   const balanceRows = [
-    ['اسم العميل','نوع البودرة','الكمية الكلية (طن)','المُسلّم (طن)','المتبقي - الصولد (طن)']
+    ['اسم العميل','نوع البودرة','رقم شهادة التخصيص','تاريخ إصدار الشهادة','الكمية الكلية (طن)','المُسلّم (طن)','المتبقي - الصولد (طن)']
   ];
   const customers = loadCustomers();
   customers.forEach(c => {
@@ -1650,11 +1989,11 @@ async function exportHistory(){
     types.forEach(t => {
       const o = c.orders[t];
       const remaining = o.total - o.delivered;
-      balanceRows.push([c.name, t, roundTo3(o.total), roundTo3(o.delivered), roundTo3(remaining)]);
+      balanceRows.push([c.name, t, o.certNumber || '', o.certDate || '', roundTo3(o.total), roundTo3(o.delivered), roundTo3(remaining)]);
     });
   });
   if(balanceRows.length === 1){
-    balanceRows.push(['لا يوجد عملاء نشطون حالياً', '', '', '', '']);
+    balanceRows.push(['لا يوجد عملاء نشطون حالياً', '', '', '', '', '', '']);
   }
 
   const statusLabelsExport = { active: 'نشط الآن', pending: 'بالانتظار', consumed: 'منتهٍ' };
@@ -1693,10 +2032,10 @@ async function exportHistory(){
   setColumnNumberFormat(wsHistory, 4, 1, historyRows.length - 1, '0.000');
 
   const wsBalance = XLSX.utils.aoa_to_sheet(balanceRows);
-  wsBalance['!cols'] = [{wch:20},{wch:12},{wch:16},{wch:14},{wch:16}];
-  setColumnNumberFormat(wsBalance, 2, 1, balanceRows.length - 1, '0.000');
-  setColumnNumberFormat(wsBalance, 3, 1, balanceRows.length - 1, '0.000');
+  wsBalance['!cols'] = [{wch:20},{wch:12},{wch:18},{wch:16},{wch:16},{wch:14},{wch:16}];
   setColumnNumberFormat(wsBalance, 4, 1, balanceRows.length - 1, '0.000');
+  setColumnNumberFormat(wsBalance, 5, 1, balanceRows.length - 1, '0.000');
+  setColumnNumberFormat(wsBalance, 6, 1, balanceRows.length - 1, '0.000');
 
   const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
   wsSummary['!cols'] = [{wch:12},{wch:18},{wch:22},{wch:22}];
@@ -1753,6 +2092,8 @@ function checkConfirmPin(){
     else if(action && action.type === 'clearHistory'){ performClearHistory(); }
     else if(action && action.type === 'deleteDossier'){ performDeleteDossier(action.data.type, action.data.id); }
     else if(action && action.type === 'labSample'){ performLabSample(action.data); }
+    else if(action && action.type === 'forceSwitchDossier'){ performForceSwitchDossier(action.data); }
+    else if(action && action.type === 'restoreBackup'){ performRestoreBackup(action.data); }
   } else {
     confirmPinErrorEl.textContent = 'رمز غير صحيح، حاول مرة أخرى';
     confirmPinBuffer = '';
@@ -2014,6 +2355,7 @@ initSunlightMode();
 renderCustomerSelect('');
 renderHistory();
 renderDossierStockList();
+updateLastBackupInfo();
 
 function setZoneLocked(zoneEl, locked){
   zoneEl.classList.toggle('locked-zone', locked);
