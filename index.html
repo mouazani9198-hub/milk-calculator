@@ -352,6 +352,19 @@
   </div>
 </div>
 
+<div id="employeeNameOverlay" style="position:fixed;inset:0;background:var(--navy-deep);z-index:998;display:none;align-items:center;justify-content:center;padding:20px;">
+  <div style="max-width:340px;width:100%;text-align:center;background:var(--navy);border-radius:18px;padding:26px 20px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 12px 30px rgba(0,0,0,0.5);">
+    <div style="font-size:34px;margin-bottom:10px;">👤</div>
+    <div style="font-size:15px;font-weight:800;color:var(--milk);margin-bottom:6px;">من يستخدم التطبيق الآن؟</div>
+    <div style="font-size:12px;color:var(--text-soft);margin-bottom:18px;line-height:1.6;">
+      لضمان الشفافية ومعرفة من قام بكل عملية — يُسجَّل اسمك مع كل عملية تسويها هذه الجلسة
+    </div>
+    <input type="text" id="employeeNameInput" list="employeeNameSuggestions" placeholder="اكتب اسمك" style="width:100%;background:var(--navy-deep);border:1px solid rgba(255,255,255,0.15);color:var(--milk);border-radius:10px;padding:14px;font-size:16px;font-weight:700;text-align:center;margin-bottom:14px;">
+    <datalist id="employeeNameSuggestions"></datalist>
+    <button class="btn-primary" style="width:100%;" onclick="confirmEmployeeName()">متابعة إلى التطبيق ✅</button>
+  </div>
+</div>
+
 <div id="confirmPinOverlay" style="position:fixed;inset:0;background:rgba(10,20,32,0.92);backdrop-filter:blur(2px);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;">
   <div style="max-width:340px;width:100%;text-align:center;background:var(--navy);border-radius:18px;padding:22px 18px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 12px 30px rgba(0,0,0,0.5);">
     <div style="font-size:28px;margin-bottom:6px;">⚠️</div>
@@ -395,6 +408,10 @@
       <div id="modeIndicator" class="mode-pill">
         <span class="mode-icon" id="modeIndicatorIcon">💧</span>
         <span id="modeIndicatorText">الوضع الحالي: 0% دسم</span>
+      </div>
+      <div class="mode-pill" style="margin-right:6px;">
+        <span class="mode-icon">👤</span>
+        <span id="employeeIndicatorText">—</span>
       </div>
     </div>
     <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
@@ -649,6 +666,11 @@
       </div>
     </div>
 
+    <div class="field" style="margin-top:12px;">
+      <label>🚚 رقم الشاحنة / اسم السائق (اختياري لكن يُنصح به بشدة)</label>
+      <input type="text" id="truckInfoInput" placeholder="مثال: 16-123-45 / أحمد">
+    </div>
+
     <div class="actions">
       <button class="btn-primary" onclick="saveToHistory()">حفظ في السجل</button>
       <button class="btn-secondary" onclick="resetFields()">تصفير</button>
@@ -681,6 +703,13 @@
         <button class="btn-primary" style="flex:1;" onclick="confirmLabSample()">تأكيد الإخراج ✅</button>
       </div>
     </div>
+  </div>
+
+  <div class="card">
+    <h2>🔍 لوحة الشفافية والرقابة</h2>
+    <div id="transparencyFlags" style="margin-bottom:12px;"></div>
+    <div style="font-size:11px;color:var(--text-soft);margin-bottom:8px;">إجمالي العمليات حسب الموظف</div>
+    <div id="employeeSummaryList"></div>
   </div>
 
   <div class="card">
@@ -795,7 +824,7 @@ function handlePinComplete(){
   if(pinStage === 'setup2'){
     if(pinBuffer === tempFirstPin){
       localStorage.setItem(PIN_KEY, pinBuffer);
-      unlockApp();
+      promptEmployeeName();
     } else {
       lockErrorEl.textContent = 'الرمزان غير متطابقين، حاول من جديد';
       pinBuffer = '';
@@ -808,7 +837,7 @@ function handlePinComplete(){
   }
   if(pinStage === 'unlock'){
     if(pinBuffer === savedPin){
-      unlockApp();
+      promptEmployeeName();
     } else {
       lockErrorEl.textContent = 'رمز غير صحيح';
       pinBuffer = '';
@@ -851,6 +880,42 @@ function handlePinComplete(){
     }
     return;
   }
+}
+
+let currentEmployeeName = '';
+const EMPLOYEE_NAMES_KEY = 'milk_calc_employee_names_v1';
+
+function promptEmployeeName(){
+  const overlay = document.getElementById('employeeNameOverlay');
+  const input = document.getElementById('employeeNameInput');
+  const names = loadEmployeeNames();
+  document.getElementById('employeeNameSuggestions').innerHTML = names.map(n => `<option value="${n}"></option>`).join('');
+  input.value = currentEmployeeName || '';
+  lockOverlayEl.style.display = 'none';
+  overlay.style.display = 'flex';
+  setTimeout(() => input.focus(), 100);
+}
+function loadEmployeeNames(){
+  try{
+    const raw = localStorage.getItem(EMPLOYEE_NAMES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function confirmEmployeeName(){
+  const input = document.getElementById('employeeNameInput');
+  const name = input.value.trim();
+  currentEmployeeName = name || 'غير محدد';
+  if(name){
+    const names = loadEmployeeNames();
+    if(!names.includes(name)){
+      names.push(name);
+      try{ localStorage.setItem(EMPLOYEE_NAMES_KEY, JSON.stringify(names)); }catch(e){}
+    }
+  }
+  const indicator = document.getElementById('employeeIndicatorText');
+  if(indicator){ indicator.textContent = currentEmployeeName; }
+  document.getElementById('employeeNameOverlay').style.display = 'none';
+  unlockApp();
 }
 
 function unlockApp(){
@@ -1571,6 +1636,7 @@ function performLabSample(data){
     dossierName: data.dossierName,
     isLabSample: true,
     labLots: data.lots, labGrams: data.grams,
+    employeeName: currentEmployeeName || 'غير محدد',
     _undo: null,
     _dossierUndo: { type: data.type, dossierId: data.dossierId, dossierSnapshotBefore }
   });
@@ -1822,6 +1888,8 @@ function resetFields(){
   tonsInputEl.value = '';
   palletsOutputEl.textContent = '0';
   bagsRemainderOutputEl.textContent = '0';
+  const truckEl = document.getElementById('truckInfoInput');
+  if(truckEl){ truckEl.value = ''; }
 }
 
 function loadHistory(){
@@ -1861,6 +1929,41 @@ function populateHistoryCustomerFilter(){
   if([...sel.options].some(o => o.value === current)){ sel.value = current; }
 }
 
+function renderTransparencyDashboard(){
+  const history = loadHistory();
+  const deliveries = history.filter(h => !h.isLabSample);
+  const missingTruck = deliveries.filter(h => !h.truckInfo);
+  const flagsEl = document.getElementById('transparencyFlags');
+  if(missingTruck.length > 0){
+    flagsEl.innerHTML = `<div style="background:rgba(224,169,56,0.15);border:1px solid var(--amber);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--milk);">
+      ⚠️ <b>${missingTruck.length}</b> عملية تسليم بدون بيانات شاحنة/سائق — يُنصح المدير بمراجعتها لضمان تطابقها مع الواقع الميداني.
+    </div>`;
+  } else {
+    flagsEl.innerHTML = `<div style="background:rgba(63,155,220,0.12);border:1px solid var(--glass-border);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--milk);">
+      ✅ كل عمليات التسليم موثقة ببيانات الشاحنة/السائق.
+    </div>`;
+  }
+
+  const byEmployee = {};
+  deliveries.forEach(h => {
+    const name = h.employeeName || 'غير محدد';
+    if(!byEmployee[name]){ byEmployee[name] = { count: 0, tons: 0 }; }
+    byEmployee[name].count++;
+    byEmployee[name].tons += (h.tons || 0);
+  });
+  const listEl = document.getElementById('employeeSummaryList');
+  const names = Object.keys(byEmployee);
+  if(names.length === 0){
+    listEl.innerHTML = '<div class="empty-history">لا توجد عمليات مسجلة بعد</div>';
+    return;
+  }
+  listEl.innerHTML = names.sort((a,b) => byEmployee[b].tons - byEmployee[a].tons).map(name => `
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:12.5px;">
+      <span>👤 ${name}</span>
+      <span>${byEmployee[name].count} عملية · <b style="color:var(--accent)">${formatTons(byEmployee[name].tons)} طن</b></span>
+    </div>`).join('');
+}
+
 function renderHistory(){
   populateHistoryCustomerFilter();
   const list = getFilteredHistory();
@@ -1873,9 +1976,11 @@ function renderHistory(){
     const timeStr = new Date(item.time).toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     const dossierPart = item.dossierName ? ` · BL: ${item.dossierName}` : '';
     const importedPart = item.imported ? ' · 📥 مستورد' : '';
+    const employeePart = item.employeeName ? ` · 👤 ${item.employeeName}` : '';
+    const truckPart = item.truckInfo ? ` · 🚚 ${item.truckInfo}` : '';
     if(item.isLabSample){
       const mainLine = `🧪 عينات مخبرية — ${formatTons(item.tons)} طن (صافي)`;
-      const subLine = `${item.powderType || ''} · ${item.labLots} لوط × ${item.labGrams} غ/كيس${dossierPart}`;
+      const subLine = `${item.powderType || ''} · ${item.labLots} لوط × ${item.labGrams} غ/كيس${dossierPart}${employeePart}`;
       return `<div class="history-item">
         <div>
           <div class="h-main">${mainLine}</div>
@@ -1888,8 +1993,8 @@ function renderHistory(){
       ? `${formatTons(item.tons)} طن ↔ ${item.pallets} منصة + ${item.remainder} كيس`
       : `${item.pallets} منصة ↔ ${formatTons(item.tons)} طن`;
     const subLine = item.customerName
-      ? `${item.customerName} · ${item.powderType || ''} · ${item.bagsPerPallet} كيس/منصة × ${item.bagWeight} كغ${dossierPart}${importedPart}`
-      : `${item.powderType || ''} · ${item.bagsPerPallet} كيس/منصة × ${item.bagWeight} كغ${dossierPart}${importedPart}`;
+      ? `${item.customerName} · ${item.powderType || ''} · ${item.bagsPerPallet} كيس/منصة × ${item.bagWeight} كغ${dossierPart}${employeePart}${truckPart}${importedPart}`
+      : `${item.powderType || ''} · ${item.bagsPerPallet} كيس/منصة × ${item.bagWeight} كغ${dossierPart}${employeePart}${truckPart}${importedPart}`;
     return `<div class="history-item">
       <div>
         <div class="h-main">${mainLine}</div>
@@ -1899,6 +2004,7 @@ function renderHistory(){
     </div>`;
   }).join('');
   renderHistoryTable(list);
+  renderTransparencyDashboard();
 }
 
 function renderHistoryTable(list){
@@ -1965,7 +2071,7 @@ async function exportHistory(){
   }
 
   const historyRows = [
-    ['التاريخ','العميل','نوع البودرة','الملف / BL','الكمية الإجمالية المسلّمة (طن)','عدد الأكياس في المنصة','وزن الكيس']
+    ['التاريخ','العميل','نوع البودرة','الملف / BL','الكمية الإجمالية المسلّمة (طن)','عدد الأكياس في المنصة','وزن الكيس','الموظف المسؤول','رقم الشاحنة / السائق']
   ];
   list.forEach(item => {
     const dateStr = new Date(item.time).toLocaleString('fr-FR');
@@ -1976,7 +2082,9 @@ async function exportHistory(){
       item.dossierName || '',
       roundTo3(item.tons),
       item.bagsPerPallet,
-      item.bagWeight
+      item.bagWeight,
+      item.employeeName || '',
+      item.truckInfo || ''
     ]);
   });
 
@@ -2028,7 +2136,7 @@ async function exportHistory(){
 
   const wb = XLSX.utils.book_new();
   const wsHistory = XLSX.utils.aoa_to_sheet(historyRows);
-  wsHistory['!cols'] = [{wch:18},{wch:20},{wch:12},{wch:16},{wch:22},{wch:16},{wch:12}];
+  wsHistory['!cols'] = [{wch:18},{wch:20},{wch:12},{wch:16},{wch:22},{wch:16},{wch:12},{wch:16},{wch:20}];
   setColumnNumberFormat(wsHistory, 4, 1, historyRows.length - 1, '0.000');
 
   const wsBalance = XLSX.utils.aoa_to_sheet(balanceRows);
@@ -2047,10 +2155,39 @@ async function exportHistory(){
   setColumnNumberFormat(wsDossiers, 7, 1, dossierRows.length - 1, '0.000');
   setColumnNumberFormat(wsDossiers, 8, 1, dossierRows.length - 1, '0.000');
 
+  const transparencyRows = [['تقرير الشفافية والرقابة'], []];
+  transparencyRows.push(['ملخص حسب الموظف']);
+  transparencyRows.push(['الموظف', 'عدد العمليات', 'إجمالي الكمية (طن)']);
+  const deliveriesForReport = list.filter(h => !h.isLabSample);
+  const byEmp = {};
+  deliveriesForReport.forEach(h => {
+    const n = h.employeeName || 'غير محدد';
+    if(!byEmp[n]){ byEmp[n] = {count:0, tons:0}; }
+    byEmp[n].count++; byEmp[n].tons += (h.tons||0);
+  });
+  Object.keys(byEmp).forEach(n => {
+    transparencyRows.push([n, byEmp[n].count, roundTo3(byEmp[n].tons)]);
+  });
+  transparencyRows.push([]);
+  transparencyRows.push(['عمليات بدون بيانات شاحنة / سائق (تحتاج مراجعة)']);
+  transparencyRows.push(['التاريخ','العميل','النوع','الكمية (طن)','الموظف']);
+  deliveriesForReport.filter(h => !h.truckInfo).forEach(h => {
+    transparencyRows.push([
+      new Date(h.time).toLocaleString('fr-FR'),
+      h.customerName || 'بدون عميل',
+      h.powderType || '',
+      roundTo3(h.tons),
+      h.employeeName || ''
+    ]);
+  });
+  const wsTransparency = XLSX.utils.aoa_to_sheet(transparencyRows);
+  wsTransparency['!cols'] = [{wch:20},{wch:16},{wch:16},{wch:16},{wch:16}];
+
   XLSX.utils.book_append_sheet(wb, wsHistory, 'السجل');
   XLSX.utils.book_append_sheet(wb, wsBalance, 'أرصدة العملاء');
   XLSX.utils.book_append_sheet(wb, wsSummary, 'ملخص المخزون');
   XLSX.utils.book_append_sheet(wb, wsDossiers, 'مخزون الملفات (BL)');
+  XLSX.utils.book_append_sheet(wb, wsTransparency, 'تقرير الشفافية');
 
   const stamp = new Date().toISOString().slice(0,10);
   XLSX.writeFile(wb, `سجل_الحليب_${stamp}.xlsx`);
@@ -2128,7 +2265,8 @@ function saveToHistory(){
 
   const customer = getSelectedCustomer();
   const customerNameForCheck = customer ? customer.name : null;
-  const data = { bagsPerPallet, bagWeight, tons, pallets, remainder, type, customer };
+  const truckInfo = (document.getElementById('truckInfoInput').value || '').trim();
+  const data = { bagsPerPallet, bagWeight, tons, pallets, remainder, type, customer, truckInfo };
 
   // فحص منطقي: كمية كبيرة بشكل غير معتاد بعملية واحدة (حماية من خطأ كتابة/رقم زائد)
   const SANITY_TONS_THRESHOLD = 100;
@@ -2170,7 +2308,7 @@ function closeCenterAlert(){
 }
 
 function commitSaveToHistory(data){
-  const { bagsPerPallet, bagWeight, tons, pallets, remainder, type, customer } = data;
+  const { bagsPerPallet, bagWeight, tons, pallets, remainder, type, customer, truckInfo } = data;
   let undoInfo = null;
   let dossierUndoInfo = null;
 
@@ -2261,6 +2399,8 @@ function commitSaveToHistory(data){
     customerName: customer ? customer.name : null,
     powderType: type,
     dossierName: activeDossier ? dossierUndoInfo.dossierSnapshotBefore.name : null,
+    employeeName: currentEmployeeName || 'غير محدد',
+    truckInfo: truckInfo || '',
     _undo: undoInfo,
     _dossierUndo: dossierUndoInfo
   });
