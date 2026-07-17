@@ -428,6 +428,7 @@
     <div id="lastBackupInfo" style="font-size:11px;color:var(--amber);margin-bottom:10px;"></div>
     <div class="actions">
       <button class="btn-primary" onclick="exportFullBackup()">💾 تصدير نسخة احتياطية الآن</button>
+      <button class="btn-secondary" onclick="shareFullBackupDirect()">📲 مشاركة مباشرة (بدون نت)</button>
     </div>
     <div style="margin-top:10px;">
       <label style="display:block;font-size:11px;color:var(--text-soft);margin-bottom:6px;">استعادة من نسخة احتياطية سابقة (.json)</label>
@@ -761,6 +762,7 @@
     <div class="actions">
       <button class="btn-secondary" onclick="undoLastOperation()">↩️ تراجع عن آخر عملية</button>
       <button class="btn-secondary" onclick="exportHistory()">📤 تصدير السجل (Excel)</button>
+      <button class="btn-secondary" onclick="shareExcelReportDirect()">📲 مشاركة مباشرة مع المدير (بدون نت)</button>
       <button class="btn-danger" onclick="clearHistory()">مسح السجل بالكامل</button>
     </div>
   </div>
@@ -1149,6 +1151,29 @@ function exportFullBackup(){
   localStorage.setItem(LAST_BACKUP_KEY, Date.now().toString());
   updateLastBackupInfo();
   showToast('💾 تم تصدير النسخة الاحتياطية — احفظها بجوجل درايف أو ذاكرة الجهاز');
+}
+
+async function shareFullBackupDirect(){
+  const payload = { exportedAt: new Date().toISOString(), data: {} };
+  Object.entries(BACKUP_KEYS).forEach(([label, key]) => {
+    payload.data[label] = localStorage.getItem(key);
+  });
+  const json = JSON.stringify(payload, null, 2);
+  const stamp = new Date().toISOString().slice(0,10);
+  const file = new File([json], `نسخة_احتياطية_حاسبة_الحليب_${stamp}.json`, { type: 'application/json' });
+
+  if(navigator.canShare && navigator.canShare({ files: [file] })){
+    try{
+      await navigator.share({ files: [file], title: 'نسخة احتياطية - حاسبة الحليب' });
+      localStorage.setItem(LAST_BACKUP_KEY, Date.now().toString());
+      updateLastBackupInfo();
+      showToast('✅ تم فتح قائمة المشاركة');
+    }catch(err){
+      if(err.name !== 'AbortError'){ showToast('⚠️ تعذّرت المشاركة، جرب زر التصدير العادي'); }
+    }
+  } else {
+    showToast('⚠️ جهازك لا يدعم المشاركة المباشرة — استخدم زر التصدير العادي');
+  }
 }
 
 function restoreFullBackup(event){
@@ -2058,16 +2083,15 @@ function setColumnNumberFormat(ws, colIndex, rowStart, rowEnd, format){
   }
 }
 
-async function exportHistory(){
+async function buildExcelWorkbook(){
   const list = getFilteredHistory().slice().reverse();
-  if(list.length === 0){ showToast('لا توجد بيانات لتصديرها'); return; }
+  if(list.length === 0){ showToast('لا توجد بيانات لتصديرها'); return null; }
 
-  showToast('⏳ جاري تجهيز ملف Excel...');
   try{
     await loadXLSXLibrary();
   }catch(e){
-    showToast('⚠️ يلزم اتصال إنترنت لأول مرة لتصدير Excel');
-    return;
+    showToast('⚠️ يلزم اتصال إنترنت لأول مرة لتجهيز ملف Excel (مرة واحدة فقط)');
+    return null;
   }
 
   const historyRows = [
@@ -2111,9 +2135,9 @@ async function exportHistory(){
     ['النوع', 'عدد الملفات (الكل)', 'عدد الملفات النشطة/المنتظرة', 'المجموع الكلي المتوفر (طن)']
   ];
   POWDER_TYPES.forEach(t => {
-    const list = getDossierList(t);
-    const activeOrPending = list.filter(d => d.status !== 'consumed').length;
-    summaryRows.push([t, list.length, activeOrPending, roundTo3(totalStockForType(t))]);
+    const dList = getDossierList(t);
+    const activeOrPending = dList.filter(d => d.status !== 'consumed').length;
+    summaryRows.push([t, dList.length, activeOrPending, roundTo3(totalStockForType(t))]);
   });
 
   const dossierRows = [
@@ -2121,8 +2145,8 @@ async function exportHistory(){
   ];
   let hasAnyDossier = false;
   POWDER_TYPES.forEach(t => {
-    const list = getDossierList(t);
-    list.forEach(d => {
+    const dList = getDossierList(t);
+    dList.forEach(d => {
       hasAnyDossier = true;
       dossierRows.push([
         t, d.name, statusLabelsExport[d.status] || d.status, d.warehouse || '', d.bagsPerPallet || '',
@@ -2190,8 +2214,42 @@ async function exportHistory(){
   XLSX.utils.book_append_sheet(wb, wsTransparency, 'تقرير الشفافية');
 
   const stamp = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, `سجل_الحليب_${stamp}.xlsx`);
+  return { wb, filename: `سجل_الحليب_${stamp}.xlsx` };
+}
+
+async function exportHistory(){
+  showToast('⏳ جاري تجهيز ملف Excel...');
+  const built = await buildExcelWorkbook();
+  if(!built) return;
+  XLSX.writeFile(built.wb, built.filename);
   showToast('📤 تم تصدير ملف Excel بنجاح');
+}
+
+async function shareExcelReportDirect(){
+  showToast('⏳ جاري تجهيز الملف للمشاركة...');
+  const built = await buildExcelWorkbook();
+  if(!built) return;
+
+  const arrayBuffer = XLSX.write(built.wb, { bookType: 'xlsx', type: 'array' });
+  const file = new File([arrayBuffer], built.filename, {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+
+  if(navigator.canShare && navigator.canShare({ files: [file] })){
+    try{
+      await navigator.share({
+        files: [file],
+        title: 'تقرير حاسبة الحليب',
+        text: 'تقرير عمليات المخزن — يمكن استقباله عبر بلوتوث/Nearby Share بدون إنترنت'
+      });
+      showToast('✅ تم فتح قائمة المشاركة');
+    }catch(err){
+      if(err.name !== 'AbortError'){ showToast('⚠️ تعذّرت المشاركة، جرب التصدير العادي بدلاً منها'); }
+    }
+  } else {
+    showToast('⚠️ جهازك لا يدعم المشاركة المباشرة — استخدم زر "تصدير" ثم شارك الملف من مجلد التنزيلات عبر بلوتوث');
+    XLSX.writeFile(built.wb, built.filename);
+  }
 }
 
 let pendingAction = null;
