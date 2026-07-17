@@ -428,7 +428,6 @@
     <div id="lastBackupInfo" style="font-size:11px;color:var(--amber);margin-bottom:10px;"></div>
     <div class="actions">
       <button class="btn-primary" onclick="exportFullBackup()">💾 تصدير نسخة احتياطية الآن</button>
-      <button class="btn-secondary" onclick="shareFullBackupDirect()">📲 مشاركة مباشرة (بدون نت)</button>
     </div>
     <div style="margin-top:10px;">
       <label style="display:block;font-size:11px;color:var(--text-soft);margin-bottom:6px;">استعادة من نسخة احتياطية سابقة (.json)</label>
@@ -762,7 +761,6 @@
     <div class="actions">
       <button class="btn-secondary" onclick="undoLastOperation()">↩️ تراجع عن آخر عملية</button>
       <button class="btn-secondary" onclick="exportHistory()">📤 تصدير السجل (Excel)</button>
-      <button class="btn-secondary" onclick="shareExcelReportDirect()">📲 مشاركة مباشرة مع المدير (بدون نت)</button>
       <button class="btn-danger" onclick="clearHistory()">مسح السجل بالكامل</button>
     </div>
   </div>
@@ -1029,9 +1027,11 @@ async function importExcelFile(event){
           const total = parseFloat(r[6]) || 0;
           const delivered = parseFloat(r[7]) || 0;
           if(!allDossiers[type]) allDossiers[type] = [];
-          let existing = allDossiers[type].find(d => d.name === name);
+          // المطابقة يجب أن تشمل المخزن (warehouse) وليس فقط الاسم، لأن نفس اسم الملف
+          // قد يتكرر بالصدفة بين مخزنين مختلفين، وهما ملفان حقيقيان منفصلان لا يجوز
+          // استبدال أحدهما بالآخر بل يجب أن يبقيا سجلّين مستقلين.
+          let existing = allDossiers[type].find(d => d.name === name && (d.warehouse || '') === (warehouse || ''));
           if(existing){
-            existing.warehouse = warehouse;
             existing.bagsPerPallet = bagsPerPallet;
             existing.expiry = expiry;
             existing.initialQty = total;
@@ -1056,6 +1056,7 @@ async function importExcelFile(event){
       if(balanceSheetName){
         const rows = XLSX.utils.sheet_to_json(wb.Sheets[balanceSheetName], {header:1});
         let customers = loadCustomers();
+        const snapshots = loadImportBalanceSnapshots();
         for(let i=1;i<rows.length;i++){
           const r = rows[i];
           if(!r || !r[0] || !r[1]) continue;
@@ -1066,18 +1067,41 @@ async function importExcelFile(event){
           const certDate = r[3] || '';
           const total = parseFloat(r[4]) || 0;
           const delivered = parseFloat(r[5]) || 0;
+          // عمود المخزن (إن وُجد في الملف المصدَّر). الملفات القديمة بدون هذا العمود
+          // تُعامل كمخزن غير معروف '' — تبقى تراكمية (جمع) لضمان التوافق معها.
+          const warehouse = r[7] || '';
+
           let customer = customers.find(c => c.name.trim().toLowerCase() === name.trim().toLowerCase());
           if(!customer){
             customer = {id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), name, orders:{}};
             customers.push(customer);
           }
           if(!customer.orders){ customer.orders = {}; }
-          customer.orders[type] = { total, delivered };
+          if(!customer.orders[type]){
+            customer.orders[type] = { total: 0, delivered: 0 };
+          }
+
+          // مفتاح اللقطة: اسم العميل + النوع + المخزن. نقارن اللقطة الجديدة بآخر لقطة
+          // مستوردة لنفس المفتاح ونضيف الفرق (delta) فقط لرصيد العميل. هذا يجعل
+          // الاستيراد "آمناً عند التكرار": إعادة استيراد نفس الملف تعطي فرقاً = 0
+          // فلا تُضاعف الأرقام، بينما استيراد لقطة أحدث (نفس المخزن) أو لقطة من
+          // مخزن آخر يُضاف بشكل صحيح دون أن يمحو أي رصيد سابق.
+          const snapKey = `${name.trim().toLowerCase()}|${type}|${warehouse}`;
+          const prevSnap = snapshots[snapKey];
+          const deltaTotal = prevSnap ? (total - prevSnap.total) : total;
+          const deltaDelivered = prevSnap ? (delivered - prevSnap.delivered) : delivered;
+
+          customer.orders[type].total = Math.round((customer.orders[type].total + deltaTotal) * 1000) / 1000;
+          customer.orders[type].delivered = Math.round((customer.orders[type].delivered + deltaDelivered) * 1000) / 1000;
+          if(warehouse){ customer.orders[type].warehouse = warehouse; }
           if(certNumber){ customer.orders[type].certNumber = certNumber; }
           if(certDate){ customer.orders[type].certDate = certDate; }
+
+          snapshots[snapKey] = { total, delivered };
           importedCustomers++;
         }
         persistCustomers(customers);
+        persistImportBalanceSnapshots(snapshots);
       }
 
       const historySheetName = wb.SheetNames.find(n => n.indexOf('السجل') > -1);
@@ -1151,29 +1175,6 @@ function exportFullBackup(){
   localStorage.setItem(LAST_BACKUP_KEY, Date.now().toString());
   updateLastBackupInfo();
   showToast('💾 تم تصدير النسخة الاحتياطية — احفظها بجوجل درايف أو ذاكرة الجهاز');
-}
-
-async function shareFullBackupDirect(){
-  const payload = { exportedAt: new Date().toISOString(), data: {} };
-  Object.entries(BACKUP_KEYS).forEach(([label, key]) => {
-    payload.data[label] = localStorage.getItem(key);
-  });
-  const json = JSON.stringify(payload, null, 2);
-  const stamp = new Date().toISOString().slice(0,10);
-  const file = new File([json], `نسخة_احتياطية_حاسبة_الحليب_${stamp}.json`, { type: 'application/json' });
-
-  if(navigator.canShare && navigator.canShare({ files: [file] })){
-    try{
-      await navigator.share({ files: [file], title: 'نسخة احتياطية - حاسبة الحليب' });
-      localStorage.setItem(LAST_BACKUP_KEY, Date.now().toString());
-      updateLastBackupInfo();
-      showToast('✅ تم فتح قائمة المشاركة');
-    }catch(err){
-      if(err.name !== 'AbortError'){ showToast('⚠️ تعذّرت المشاركة، جرب زر التصدير العادي'); }
-    }
-  } else {
-    showToast('⚠️ جهازك لا يدعم المشاركة المباشرة — استخدم زر التصدير العادي');
-  }
 }
 
 function restoreFullBackup(event){
@@ -1682,6 +1683,21 @@ function loadCustomers(){
 function persistCustomers(list){
   try{ localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(list)); }catch(e){}
 }
+
+// لقطات آخر استيراد لكل (عميل + نوع + مخزن) — تُستخدم لجعل استيراد أرصدة العملاء
+// عملية "تراكمية آمنة": فقط الفرق (delta) بين اللقطة الجديدة والقديمة يُضاف لرصيد
+// العميل، فإعادة استيراد نفس الملف لا تُضاعف الأرقام، بينما استيراد رصيد حقيقي
+// جديد (من نفس المخزن أو مخزن آخر) يُضاف بشكل صحيح.
+const IMPORT_BALANCE_SNAPSHOTS_KEY = 'milk_calc_import_balance_snapshots_v1';
+function loadImportBalanceSnapshots(){
+  try{
+    const raw = localStorage.getItem(IMPORT_BALANCE_SNAPSHOTS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function persistImportBalanceSnapshots(obj){
+  try{ localStorage.setItem(IMPORT_BALANCE_SNAPSHOTS_KEY, JSON.stringify(obj)); }catch(e){}
+}
 function renderCustomerSelect(keepSelectedId){
   const list = loadCustomers();
   const current = keepSelectedId !== undefined ? keepSelectedId : customerSelectEl.value;
@@ -1776,6 +1792,8 @@ function addCustomer(){
   customer.orders[type].total = Math.round((customer.orders[type].total + total) * 1000) / 1000;
   if(certNumber){ customer.orders[type].certNumber = certNumber; }
   if(certDate){ customer.orders[type].certDate = certDate; }
+  const currentWh = (typeof getSelectedWarehouse === 'function' ? getSelectedWarehouse() : '') || '';
+  if(currentWh){ customer.orders[type].warehouse = currentWh; }
 
   persistCustomers(list);
   nameEl.value = '';
@@ -2113,19 +2131,20 @@ async function buildExcelWorkbook(){
   });
 
   const balanceRows = [
-    ['اسم العميل','نوع البودرة','رقم شهادة التخصيص','تاريخ إصدار الشهادة','الكمية الكلية (طن)','المُسلّم (طن)','المتبقي - الصولد (طن)']
+    ['اسم العميل','نوع البودرة','رقم شهادة التخصيص','تاريخ إصدار الشهادة','الكمية الكلية (طن)','المُسلّم (طن)','المتبقي - الصولد (طن)','المخزن']
   ];
   const customers = loadCustomers();
+  const currentWh = (typeof getSelectedWarehouse === 'function' ? getSelectedWarehouse() : '') || '';
   customers.forEach(c => {
     const types = Object.keys(c.orders || {});
     types.forEach(t => {
       const o = c.orders[t];
       const remaining = o.total - o.delivered;
-      balanceRows.push([c.name, t, o.certNumber || '', o.certDate || '', roundTo3(o.total), roundTo3(o.delivered), roundTo3(remaining)]);
+      balanceRows.push([c.name, t, o.certNumber || '', o.certDate || '', roundTo3(o.total), roundTo3(o.delivered), roundTo3(remaining), o.warehouse || currentWh || '']);
     });
   });
   if(balanceRows.length === 1){
-    balanceRows.push(['لا يوجد عملاء نشطون حالياً', '', '', '', '', '', '']);
+    balanceRows.push(['لا يوجد عملاء نشطون حالياً', '', '', '', '', '', '', '']);
   }
 
   const statusLabelsExport = { active: 'نشط الآن', pending: 'بالانتظار', consumed: 'منتهٍ' };
@@ -2164,7 +2183,7 @@ async function buildExcelWorkbook(){
   setColumnNumberFormat(wsHistory, 4, 1, historyRows.length - 1, '0.000');
 
   const wsBalance = XLSX.utils.aoa_to_sheet(balanceRows);
-  wsBalance['!cols'] = [{wch:20},{wch:12},{wch:18},{wch:16},{wch:16},{wch:14},{wch:16}];
+  wsBalance['!cols'] = [{wch:20},{wch:12},{wch:18},{wch:16},{wch:16},{wch:14},{wch:16},{wch:16}];
   setColumnNumberFormat(wsBalance, 4, 1, balanceRows.length - 1, '0.000');
   setColumnNumberFormat(wsBalance, 5, 1, balanceRows.length - 1, '0.000');
   setColumnNumberFormat(wsBalance, 6, 1, balanceRows.length - 1, '0.000');
@@ -2223,33 +2242,6 @@ async function exportHistory(){
   if(!built) return;
   XLSX.writeFile(built.wb, built.filename);
   showToast('📤 تم تصدير ملف Excel بنجاح');
-}
-
-async function shareExcelReportDirect(){
-  showToast('⏳ جاري تجهيز الملف للمشاركة...');
-  const built = await buildExcelWorkbook();
-  if(!built) return;
-
-  const arrayBuffer = XLSX.write(built.wb, { bookType: 'xlsx', type: 'array' });
-  const file = new File([arrayBuffer], built.filename, {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  });
-
-  if(navigator.canShare && navigator.canShare({ files: [file] })){
-    try{
-      await navigator.share({
-        files: [file],
-        title: 'تقرير حاسبة الحليب',
-        text: 'تقرير عمليات المخزن — يمكن استقباله عبر بلوتوث/Nearby Share بدون إنترنت'
-      });
-      showToast('✅ تم فتح قائمة المشاركة');
-    }catch(err){
-      if(err.name !== 'AbortError'){ showToast('⚠️ تعذّرت المشاركة، جرب التصدير العادي بدلاً منها'); }
-    }
-  } else {
-    showToast('⚠️ جهازك لا يدعم المشاركة المباشرة — استخدم زر "تصدير" ثم شارك الملف من مجلد التنزيلات عبر بلوتوث');
-    XLSX.writeFile(built.wb, built.filename);
-  }
 }
 
 let pendingAction = null;
